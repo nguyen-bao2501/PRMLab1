@@ -67,6 +67,7 @@ public class SessionService {
             throw new ApiException(ErrorCode.SESSION_CLOSED);
         }
 
+        s.setQrExpiresAt(Instant.now().plusSeconds(qrTokenService.getTtlSeconds()));
         String token = qrTokenService.generateForSession(s.getId());
         return toResponse(s, token, false);
     }

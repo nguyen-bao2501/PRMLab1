@@ -43,7 +43,8 @@ public class ClassService {
 
     public List<ClassResponse> listByTeacher(User teacher) {
         return classRepository.findByTeacherIdOrderByCreatedAtDesc(teacher.getId())
-                .stream().map(this::toResponse).collect(Collectors.toList());
+                .stream().filter(c -> Boolean.TRUE.equals(c.getIsActive()))
+                .map(this::toResponse).collect(Collectors.toList());
     }
 
     public ClassResponse getById(Long id, User teacher) {
@@ -68,9 +69,8 @@ public class ClassService {
     }
 
     private ClassResponse toResponse(ClassRoom c) {
-        String sheetName = classSheetRepository.findByClassRoomId(c.getId())
-                .map(cs -> cs.getSheetName())
-                .orElse(null);
+        var mapping = classSheetRepository.findByClassRoomId(c.getId());
+        String sheetName = mapping.map(cs -> cs.getSheetName()).orElse(null);
 
         return ClassResponse.builder()
                 .id(c.getId())
@@ -81,6 +81,7 @@ public class ClassService {
                 .totalSessions(c.getTotalSessions())
                 .studentCount(enrollmentRepository.countByClassRoomId(c.getId()))
                 .sheetName(sheetName)
+                .spreadsheetId(mapping.map(cs -> cs.getSpreadsheetId()).orElse(null))
                 .createdAt(c.getCreatedAt())
                 .build();
     }

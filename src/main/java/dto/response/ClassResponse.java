@@ -14,5 +14,6 @@ public class ClassResponse {
     private Integer totalSessions;
     private Long studentCount;
     private String sheetName;
+    private String spreadsheetId;
     private Instant createdAt;
 }
