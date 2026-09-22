@@ -1163,7 +1163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Buổi học',
         'Chọn lớp học để quản lý các phiên điểm danh.',
         trailing: button(
-          'Tạo buổi học',
+          'Bắt đầu điểm danh (Slot hiện tại)',
           Icons.add,
           s.selectedClass == null ? null : createSession,
           primary: true,
@@ -1234,10 +1234,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         panel(
           empty(
             'Chưa có buổi học',
-            'Tạo buổi học đầu tiên để nhận mã QR điểm danh.',
+            'Bắt đầu điểm danh để nhận mã QR.',
             Icons.event_available_outlined,
             action: button(
-              'Tạo buổi học',
+              'Bắt đầu điểm danh (Slot hiện tại)',
               Icons.add,
               createSession,
               primary: true,
@@ -1298,7 +1298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Điểm danh lớp học',
         'Một mã QR. Cả lớp kết nối. Kết quả cập nhật mỗi 5 giây.',
         trailing: button(
-          'Tạo buổi học',
+          'Bắt đầu điểm danh (Slot hiện tại)',
           Icons.add,
           s.selectedClass == null ? null : createSession,
           primary: true,
@@ -1960,12 +1960,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> createSession() async {
     final id = s.selectedClass!['id'] as int;
-    final data = await form('Bắt đầu buổi học', {
-      'room': 'Phòng học',
-    }, submit: 'Mở điểm danh');
-    if (data == null || !mounted) return;
     await action(() async {
-      final item = await s.api.createSession(id, data['room']!);
+      // Gọi API trực tiếp không cần nhập thông tin
+      final item = await s.api.createSession(id, ''); 
       await s.reload();
       await s.selectSession(item);
       if (mounted) setState(() => page = 3);

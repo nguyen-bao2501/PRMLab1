@@ -33,10 +33,10 @@ class AttendanceStore extends ChangeNotifier {
       try {
         final profile = await api.me();
         if (_disposed || generation != _generation) return;
-        if (profile['role'] != 'TEACHER' && profile['role'] != 'STUDENT') {
+        if (profile['role'] != 'TEACHER') {
           await session?.clear();
           throw const ApiException(
-            'Tài khoản này chưa có quyền giảng viên hoặc sinh viên.',
+            'Chỉ giảng viên mới được phép đăng nhập trên máy tính.',
           );
         }
         user = profile;
@@ -101,9 +101,9 @@ class AttendanceStore extends ChangeNotifier {
     api.token = data['accessToken'] as String;
     try {
       final profile = await api.me();
-      if (profile['role'] != 'TEACHER' && profile['role'] != 'STUDENT') {
+      if (profile['role'] != 'TEACHER') {
         throw const ApiException(
-          'Tài khoản này chưa có quyền giảng viên hoặc sinh viên.',
+          'Chỉ giảng viên mới được phép đăng nhập trên máy tính.',
         );
       }
       user = profile;
