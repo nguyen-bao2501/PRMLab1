@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import '../widgets/campus_login.dart';
 import '../widgets/studio_widgets.dart';
@@ -248,42 +249,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
     EdgeInsets padding = const EdgeInsets.all(24),
     Color color = Colors.white,
   }) => HoverPanel(padding: padding, color: color, child: child);
-  Widget brand({bool white = false}) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      for (final pair in [
-        ('F', const Color(0xFF1675BC)),
-        ('P', fptOrange),
-        ('T', const Color(0xFF49A942)),
-      ])
-        Container(
-          margin: const EdgeInsets.only(right: 3),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: pair.$2,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Text(
-            pair.$1,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 25,
-              fontWeight: FontWeight.w900,
-              fontStyle: FontStyle.italic,
+  Widget brand({bool white = false}) => Image.asset(
+    'assets/images/fpt_logo.png',
+    height: 60,
+    errorBuilder: (context, error, stackTrace) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final pair in [
+          ('F', const Color(0xFF1675BC)),
+          ('P', const Color(0xFFF26522)),
+          ('T', const Color(0xFF49A942)),
+        ])
+          Container(
+            margin: const EdgeInsets.only(right: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: pair.$2,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              pair.$1,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
+        const SizedBox(width: 6),
+        Text(
+          'UNIVERSITY',
+          style: TextStyle(
+            fontSize: 18,
+            letterSpacing: 1,
+            fontWeight: FontWeight.w800,
+            color: white ? Colors.white : const Color(0xFF1E293B),
+          ),
         ),
-      const SizedBox(width: 6),
-      Text(
-        'UNIVERSITY',
-        style: TextStyle(
-          fontSize: 12,
-          letterSpacing: 1,
-          fontWeight: FontWeight.w800,
-          color: white ? Colors.white : ink,
-        ),
-      ),
-    ],
+      ],
+    ),
   );
   Widget badge(String label, {Color color = green}) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
@@ -389,44 +394,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Container(
-            width: 480,
-            padding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.sizeOf(context).width < 600 ? 8 : 48,
-              vertical: 48,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.transparent, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.transparent,
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                brand(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Chào mừng trở lại',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Theme(
+                data: ThemeData.light().copyWith(
+                  scaffoldBackgroundColor: Colors.transparent,
+                  colorScheme: const ColorScheme.light(
+                    primary: Color(0xFF173D35),
+                    secondary: Color(0xFFDCEAA5),
                   ),
                 ),
-                const SizedBox(height: 8),
+                child: Container(
+                  width: 480,
+                  padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.sizeOf(context).width < 600 ? 24 : 48,
+                  vertical: 48,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white, // Solid white card
+                  borderRadius: BorderRadius.circular(24), // Slightly smaller radius like the picture
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05), // Very faint shadow
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                brand(),
+                const SizedBox(height: 24),
+                const Text(
+                  'Đăng nhập',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E293B), // Dark navy
+                  ),
+                ),
+                const SizedBox(height: 12),
                 const Text(
                   'Để tiếp tục sử dụng ứng dụng điểm danh\nFPT University',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFF64748B), // Gray
                     height: 1.5,
                   ),
                 ),
@@ -440,14 +456,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   height: 56,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: ink,
+                      backgroundColor: const Color(0xFF4285F4), // Google Blue
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 10,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 0,
                     ),
                     onPressed: s.busy
                         ? null
@@ -464,11 +482,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         if (s.busy)
                           const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 24,
+                            height: 24,
                             child: CircularProgressIndicator(
                               color: Colors.white,
-                              strokeWidth: 2,
+                              strokeWidth: 2.5,
                             ),
                           )
                         else
@@ -478,18 +496,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.g_mobiledata,
-                              color: ink,
-                              size: 22,
+                            child: Image.network(
+                              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png',
+                              width: 20,
+                              height: 20,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 20),
                             ),
                           ),
                         const SizedBox(width: 12),
-                        Text(
-                          s.busy ? 'Đang đăng nhập…' : 'Đăng nhập với Google',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          child: Text(
+                            s.busy ? 'Đang đăng nhập…' : 'Đăng nhập bằng Google',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -499,7 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 32),
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                    const Expanded(child: Divider(color: Colors.black12)),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
@@ -510,23 +533,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                    const Expanded(child: Divider(color: Colors.black12)),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.verified_user_outlined,
-                      size: 16,
-                      color: Color(0xFF94A3B8),
+                      size: 18,
+                      color: Color(0xFF64748B),
                     ),
                     SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Kết nối bằng tài khoản Google của bạn',
-                        style: TextStyle(color: muted, fontSize: 12),
+                        'Bảo mật bởi Google Workspace',
+                        style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
                       ),
                     ),
                   ],
@@ -594,7 +617,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     ),
-  );
+  ),
+),
+),
+);
 
 
   Widget sidebar(bool wide) => Container(
