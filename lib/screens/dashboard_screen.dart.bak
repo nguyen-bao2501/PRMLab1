@@ -1,7 +1,5 @@
 import 'dart:async';
-
-import '../widgets/campus_login.dart';
-import '../widgets/studio_widgets.dart';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -16,133 +14,8 @@ import '../services/desktop_session.dart';
 import 'import_classes_dialog.dart';
 
 const green = Color(0xFF15966A);
-const line = Color(0xFFE3E5DC);
+const line = Color(0xFFE8EDF2);
 const paleOrange = Color(0xFFFFF2E8);
-
-// Premium Colors
-const premiumOrange = Color(0xFFC45425);
-const premiumOrangeLight = Color(0xFFD5703D);
-const premiumShadow = Color(0x19FF7A00);
-const softShadow = Color(0x0A000000);
-
-class HoverPanel extends StatefulWidget {
-  const HoverPanel({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(24),
-    this.color = Colors.white,
-  });
-  final Widget child;
-  final EdgeInsets padding;
-  final Color color;
-  @override
-  State<HoverPanel> createState() => _HoverPanelState();
-}
-
-class _HoverPanelState extends State<HoverPanel> {
-  bool hover = false;
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => hover = true),
-      onExit: (_) => setState(() => hover = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding: widget.padding,
-        transform: Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: widget.color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: hover ? premiumOrange.withValues(alpha: 0.3) : line,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: hover ? premiumShadow : softShadow,
-              blurRadius: hover ? 16 : 0,
-              offset: Offset(0, hover ? 6 : 0),
-            ),
-          ],
-        ),
-        child: Material(color: Colors.transparent, child: widget.child),
-      ),
-    );
-  }
-}
-
-class GradientButton extends StatelessWidget {
-  const GradientButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    this.onPressed,
-    this.primary = true,
-  });
-  final String label;
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!primary) {
-      return OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          side: const BorderSide(color: line),
-        ),
-      );
-    }
-    return Container(
-      decoration: BoxDecoration(
-        gradient: onPressed == null
-            ? null
-            : const LinearGradient(colors: [ink, ink]),
-        color: onPressed == null ? Colors.grey.shade300 : null,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: onPressed == null
-            ? []
-            : [
-                const BoxShadow(
-                  color: Color(0x10173D35),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(
-          icon,
-          size: 18,
-          color: onPressed == null ? Colors.grey.shade500 : Colors.white,
-        ),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: onPressed == null ? Colors.grey.shade500 : Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, this.store, this.googleSignIn});
@@ -209,19 +82,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : '${two(d.day)}/${two(d.month)}/${d.year}';
   }
 
-  String getFptSlot(dynamic value) {
-    final d = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
-    if (d == null) return 'Slot 1';
-    final timeInt = d.hour * 100 + d.minute;
-    if (timeInt < 910) return 'Slot 1';
-    if (timeInt < 1200) return 'Slot 2';
-    if (timeInt < 1450) return 'Slot 3';
-    if (timeInt < 1720) return 'Slot 4';
-    if (timeInt < 1950) return 'Slot 5';
-    return 'Slot 6';
-  }
-
-
   void toast(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -243,11 +103,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     text,
     style: const TextStyle(color: muted, fontSize: 13, height: 1.6),
   );
-  Widget panel(
-    Widget child, {
-    EdgeInsets padding = const EdgeInsets.all(24),
-    Color color = Colors.white,
-  }) => HoverPanel(padding: padding, color: color, child: child);
+  Widget panel(Widget child, {EdgeInsets padding = const EdgeInsets.all(24)}) =>
+      Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: line),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Material(color: Colors.transparent, child: child),
+      );
   Widget brand({bool white = false}) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
@@ -301,29 +166,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     IconData icon,
     VoidCallback? callback, {
     bool primary = false,
-  }) => GradientButton(
-    label: label,
-    icon: icon,
-    onPressed: s.busy ? null : callback,
-    primary: primary,
-  );
+  }) => primary
+      ? FilledButton.icon(
+          onPressed: s.busy ? null : callback,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+        )
+      : OutlinedButton.icon(
+          onPressed: s.busy ? null : callback,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+        );
   @override
   Widget build(BuildContext context) {
     if (s.user == null) return login();
-    final compact = MediaQuery.sizeOf(context).width < 700;
     return Scaffold(
-      drawer: compact
-          ? Drawer(
-              backgroundColor: ink,
-              child: SafeArea(child: sidebar(true)),
-            )
-          : null,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 1050;
           return Row(
             children: [
-              if (!compact) sidebar(wide),
+              sidebar(wide),
               Expanded(
                 child: Column(
                   children: [
@@ -332,25 +195,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (s.error != null) errorBanner(),
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: EdgeInsets.all(
-                          compact ? 16 : (wide ? 36 : 24),
-                        ),
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 1500),
-                            child: s.student
-                                ? studentPage()
-                                : switch (page) {
-                                    0 => overview(),
-                                    1 => classesPage(),
-                                    2 => sessionsPage(),
-                                    3 => attendancePage(),
-                                    4 => reportsPage(),
-                                    _ => settingsPage(),
-                                  },
-                          ),
-                        ),
+                        padding: EdgeInsets.all(wide ? 32 : 20),
+                        child: s.student
+                            ? studentPage()
+                            : switch (page) {
+                                0 => overview(),
+                                1 => classesPage(),
+                                2 => sessionsPage(),
+                                3 => attendancePage(),
+                                4 => reportsPage(),
+                                _ => settingsPage(),
+                              },
                       ),
                     ),
                   ],
@@ -385,222 +240,237 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
   );
   Widget login() => Scaffold(
-    body: CampusLogin(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+    body: Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/fpt_bg.jpg',
+          fit: BoxFit.cover,
+        ),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
           child: Container(
-            width: 480,
-            padding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.sizeOf(context).width < 600 ? 8 : 48,
-              vertical: 48,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.transparent, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.transparent,
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                brand(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Chào mừng trở lại',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+            color: Colors.black.withValues(alpha: 0.1),
+          ),
+        ),
+        Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              width: 480,
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Để tiếp tục sử dụng ứng dụng điểm danh\nFPT University',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF64748B),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (s.error != null) ...[
-                  errorBanner(),
-                  const SizedBox(height: 16),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ink,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: s.busy
-                        ? null
-                        : () => action(() async {
-                            await s.authenticate(
-                              () async => s.api.googleLogin(
-                                await (widget.googleSignIn ??
-                                    GoogleAuth.signIn)(),
-                              ),
-                            );
-                          }),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (s.busy)
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.g_mobiledata,
-                              color: ink,
-                              size: 22,
-                            ),
-                          ),
-                        const SizedBox(width: 12),
-                        Text(
-                          s.busy ? 'Đang đăng nhập…' : 'Đăng nhập với Google',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  brand(),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Đăng nhập',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'FPT UNIVERSITY',
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 13,
-                        ),
-                      ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Để tiếp tục sử dụng ứng dụng điểm danh\nFPT University',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF64748B),
+                      height: 1.5,
                     ),
-                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.verified_user_outlined,
-                      size: 16,
-                      color: Color(0xFF94A3B8),
-                    ),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Kết nối bằng tài khoản Google của bạn',
-                        style: TextStyle(color: muted, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-
-                if (const bool.fromEnvironment('ENABLE_DEV_LOGIN')) ...[
+                  ),
                   const SizedBox(height: 32),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Cấu hình kết nối & Developer',
-                      style: TextStyle(fontSize: 13, color: muted),
-                    ),
-                    children: [
-
-                      TextField(
-                        controller: email,
-                        decoration: const InputDecoration(
-                          labelText: 'Email kiểm thử',
+                  if (s.error != null) ...[
+                    errorBanner(),
+                    const SizedBox(height: 16),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        keyboardType: TextInputType.emailAddress,
                       ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: devRole,
-                        decoration: const InputDecoration(labelText: 'Vai trò'),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'TEACHER',
-                            child: Text('Giảng viên'),
+                      onPressed: s.busy ? null : () => action(() async {
+                        applyServer();
+                        await s.authenticate(
+                          () async => s.api.googleLogin(
+                            await (widget.googleSignIn ?? GoogleAuth.signIn)(),
                           ),
-                          DropdownMenuItem(
-                            value: 'STUDENT',
-                            child: Text('Sinh viên'),
+                        );
+                      }),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (s.busy)
+                            const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Image.network(
+                                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png',
+                                width: 18,
+                                height: 18,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.g_mobiledata,
+                                  color: Color(0xFF3B82F6),
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 12),
+                          Text(
+                            s.busy ? 'Đang đăng nhập…' : 'Đăng nhập bằng Google',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                           ),
                         ],
-                        onChanged: (v) => setState(() => devRole = v!),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: button(
-                          'Đăng nhập thử nghiệm',
-                          Icons.code,
-                          () => action(() async {
-                            if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                                .hasMatch(email.text.trim())) {
-                              throw const ApiException(
-                                'Vui lòng nhập email hợp lệ.',
-                              );
-                            }
-                            await s.authenticate(
-                              () => s.api.devLogin(email.text.trim(), devRole),
-                            );
-                          }),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Hoặc',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF94A3B8)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Chỉ dành cho sinh viên và giảng viên FPT University',
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  if (const bool.fromEnvironment('ENABLE_DEV_LOGIN')) ...[
+                    const SizedBox(height: 32),
+                    ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Cấu hình kết nối & Developer',
+                        style: TextStyle(fontSize: 13, color: muted),
+                      ),
+                      children: [
+                        TextField(
+                          controller: server,
+                          decoration: const InputDecoration(
+                            labelText: 'Địa chỉ backend',
+                            hintText: 'http://localhost:8080',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: email,
+                          decoration: const InputDecoration(
+                            labelText: 'Email kiểm thử',
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          initialValue: devRole,
+                          decoration: const InputDecoration(
+                            labelText: 'Vai trò',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'TEACHER',
+                              child: Text('Giảng viên'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'STUDENT',
+                              child: Text('Sinh viên'),
+                            ),
+                          ],
+                          onChanged: (v) => setState(() => devRole = v!),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: button(
+                            'Đăng nhập thử nghiệm',
+                            Icons.code,
+                            () => action(() async {
+                              if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                  .hasMatch(email.text.trim())) {
+                                throw const ApiException(
+                                  'Vui lòng nhập email hợp lệ.',
+                                );
+                              }
+                              applyServer();
+                              await s.authenticate(
+                                () => s.api.devLogin(
+                                  email.text.trim(),
+                                  devRole,
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     ),
   );
-
+  void applyServer() {
+    final uri = Uri.tryParse(server.text.trim());
+    if (uri == null ||
+        !['http', 'https'].contains(uri.scheme) ||
+        uri.host.isEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        uri.userInfo.isNotEmpty) {
+      throw const ApiException('Địa chỉ backend không hợp lệ.');
+    }
+    s.api.baseUrl = server.text.trim().replaceAll(RegExp(r'/+$'), '');
+  }
 
   Widget sidebar(bool wide) => Container(
     width: wide ? 242 : 76,
     decoration: const BoxDecoration(
-      color: ink,
+      color: Colors.white,
       border: Border(right: BorderSide(color: line)),
     ),
     child: Column(
@@ -611,7 +481,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             horizontal: wide ? 22 : 10,
           ),
           child: wide
-              ? brand(white: true)
+              ? brand()
               : const Icon(Icons.school_rounded, color: fptOrange, size: 34),
         ),
         if (wide)
@@ -622,7 +492,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Text(
                 'KHÔNG GIAN GIẢNG DẠY',
                 style: TextStyle(
-                  color: const Color(0xFFADBFB5),
+                  color: muted,
                   letterSpacing: 1.3,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -645,7 +515,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Container(
               padding: const EdgeInsets.all(17),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F2D9),
+                color: paleOrange,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -689,17 +559,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(10),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.logout_rounded,
-                      color: const Color(0xFFADBFB5),
-                      size: 21,
-                    ),
+                    const Icon(Icons.logout_rounded, color: muted, size: 21),
                     if (wide) ...[
                       const SizedBox(width: 12),
-                      const Text(
-                        'Đăng xuất',
-                        style: TextStyle(color: const Color(0xFFADBFB5)),
-                      ),
+                      const Text('Đăng xuất', style: TextStyle(color: muted)),
                     ],
                   ],
                 ),
@@ -717,43 +580,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Tooltip(
         message: wide ? '' : label,
         child: Material(
-          color: active ? const Color(0xFFDCEAA5) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: active ? paleOrange : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
           child: InkWell(
             onTap: () => setState(() {
-              if (MediaQuery.sizeOf(context).width < 700) {
-                Navigator.of(context).pop();
-              }
               page = index;
               search = '';
               filter = 'ALL';
             }),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               child: Row(
                 children: [
-                  Icon(
-                    icon,
-                    color: active ? ink : const Color(0xFFADBFB5),
-                    size: 22,
-                  ),
+                  Icon(icon, color: active ? fptOrange : muted, size: 22),
                   if (wide) ...[
                     const SizedBox(width: 13),
                     Expanded(
                       child: Text(
                         label,
                         style: TextStyle(
-                          color: active ? ink : const Color(0xFFDFE6DE),
+                          color: active ? fptOrange : ink,
                           fontWeight: active
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           fontSize: 13,
                         ),
                       ),
                     ),
                     if (active)
-                      const Icon(Icons.chevron_right, color: ink, size: 18),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: fptOrange,
+                        size: 18,
+                      ),
                   ],
                 ],
               ),
@@ -765,42 +625,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget header() => Container(
-    height: 80,
-    padding: EdgeInsets.symmetric(
-      horizontal: MediaQuery.sizeOf(context).width < 700 ? 16 : 32,
-    ),
+    height: 83,
+    padding: const EdgeInsets.symmetric(horizontal: 26),
     decoration: const BoxDecoration(
-      color: Color(0xFFF5F4EC),
+      color: Colors.white,
       border: Border(bottom: BorderSide(color: line)),
     ),
     child: Row(
       children: [
-        if (MediaQuery.sizeOf(context).width < 700)
-          Builder(
-            builder: (context) => IconButton(
-              tooltip: 'Mở điều hướng',
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              icon: const Icon(Icons.menu, color: ink),
-            ),
-          )
-        else ...[
-          const Icon(Icons.blur_on, color: ink, size: 26),
-          const SizedBox(width: 12),
-        ],
-        Expanded(
+        const Icon(Icons.home_outlined, color: muted, size: 19),
+        const SizedBox(width: 10),
+        Flexible(
           child: Text(
-            s.student
-                ? 'CAMPUS / SINH VIÊN'
-                : 'CAMPUS / ${['TỔNG QUAN', 'LỚP HỌC', 'BUỔI HỌC', 'ĐIỂM DANH', 'BÁO CÁO', 'TÀI KHOẢN'][page]}',
+            'Cổng ${s.student ? 'sinh viên' : 'giảng viên'}  /  ${s.student ? 'Điểm danh' : ['Tổng quan', 'Lớp học', 'Buổi học', 'Điểm danh', 'Báo cáo', 'Tài khoản'][page]}',
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: ink,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.6,
-            ),
+            style: const TextStyle(color: muted, fontSize: 13),
           ),
         ),
+        const Spacer(),
         IconButton(
           tooltip: 'Đồng bộ dữ liệu',
           onPressed: s.busy
@@ -811,11 +653,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     await s.selectSession(s.selectedSession!);
                   }
                 }),
-          icon: const Icon(Icons.sync, color: muted, size: 20),
+          icon: const Icon(Icons.sync, color: muted, size: 21),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 15),
         PopupMenuButton<String>(
           tooltip: 'Tài khoản',
+          offset: const Offset(0, 45),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           onSelected: (value) {
             if (value == 'logout') {
               s.logout();
@@ -824,54 +670,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 search = '';
                 filter = 'ALL';
               });
-            } else {
-              setState(() => page = 5);
             }
           },
           itemBuilder: (context) => [
-            if (!s.student)
-              const PopupMenuItem(
-                value: 'profile',
-                child: Text('Tài khoản & kết nối'),
-              ),
-            const PopupMenuItem(value: 'logout', child: Text('Đăng xuất')),
-          ],
-          child: CircleAvatar(
-            radius: 19,
-            backgroundColor: studioLime,
-            child: Text(
-              str(s.user, 'fullName', 'U').isEmpty
-                  ? 'U'
-                  : str(s.user, 'fullName')[0].toUpperCase(),
-              style: const TextStyle(
-                color: ink,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+            const PopupMenuItem(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, size: 20, color: Colors.redAccent),
+                  SizedBox(width: 10),
+                  Text('Đăng xuất', style: TextStyle(color: Colors.redAccent)),
+                ],
               ),
             ),
+          ],
+          child: const CircleAvatar(
+            radius: 19,
+            backgroundColor: paleOrange,
+            child: Icon(Icons.person_outline, color: fptOrange, size: 22),
           ),
         ),
-        if (MediaQuery.sizeOf(context).width >= 700) ...[
-          const SizedBox(width: 12),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                str(s.user, 'fullName', 'Giảng viên'),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                s.student ? 'Sinh viên' : 'Không gian giảng viên',
-                style: const TextStyle(color: muted, fontSize: 10),
-              ),
-            ],
-          ),
-        ],
+        const SizedBox(width: 12),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              str(s.user, 'fullName', 'Giảng viên'),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            Text(
+              s.student ? 'Sinh viên' : 'Giảng viên',
+              style: const TextStyle(color: muted, fontSize: 11),
+            ),
+          ],
+        ),
       ],
     ),
   );
@@ -897,7 +730,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            title(text, size: 32),
+            title(text, size: 28),
             const SizedBox(height: 6),
             subtitle(description),
           ],
@@ -951,44 +784,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String note,
     IconData icon,
     Color color,
-  ) => Container(
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: .065),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: color.withValues(alpha: .16)),
-    ),
-    child: Column(
+  ) => panel(
+    Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, color: color, size: 19),
-            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: ink,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: const TextStyle(color: muted, fontSize: 12),
               ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .09),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 7),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 39,
-            height: 1.1,
-            letterSpacing: -1.5,
+            fontSize: 30,
             fontWeight: FontWeight.w700,
             color: ink,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(note, style: const TextStyle(fontSize: 11, color: muted)),
       ],
     ),
@@ -1008,14 +835,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       heading(
-        '01 / KHÔNG GIAN GIẢNG DẠY',
+        'TEACHING WORKSPACE',
         'Một ngày dạy học hiệu quả',
         'Quản lý lớp học và theo dõi điểm danh trong một không gian.',
         trailing: badge(date(DateTime.now().toIso8601String()), color: muted),
       ),
-      StudioHero(
-        onOpen: () => setState(() => page = 1),
-        onImport: s.busy ? null : importAllClasses,
+      Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF173A50), Color(0xFF28546B)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ít thao tác hơn. Nhiều kết nối hơn.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Mở buổi học, chia sẻ mã QR và để điểm danh tự cập nhật.',
+                    style: TextStyle(color: Color(0xFFB9CEDB), height: 1.6),
+                  ),
+                  const SizedBox(height: 22),
+                  button(
+                    'Đến lớp học của tôi',
+                    Icons.arrow_forward_rounded,
+                    () => setState(() => page = 1),
+                    primary: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 20),
+            const Icon(
+              Icons.qr_code_2_rounded,
+              size: 100,
+              color: Color(0xFFD5E3EA),
+            ),
+          ],
+        ),
       ),
       const SizedBox(height: 24),
       grid([
@@ -1082,7 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         heading(
-          '02 / LỚP HỌC',
+          'CLASS MANAGEMENT',
           'Lớp học của tôi',
           'Tổ chức lớp học, quản lý danh sách và bắt đầu điểm danh.',
           trailing: button(
@@ -1122,116 +991,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget classGrid(List<Json> list) => grid(
-    list.asMap().entries.map((entry) {
-      final c = entry.value;
-      final color = [
-        const Color(0xFFE6EDCD),
-        const Color(0xFFE9E5F4),
-        const Color(0xFFF6E2D0),
-      ][entry.key % 3];
-      return panel(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.auto_stories_outlined,
-                        color: ink,
-                        size: 23,
+    list
+        .map(
+          (c) => panel(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: paleOrange,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const Spacer(),
-                      badge(str(c, 'semester'), color: ink),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    str(c, 'subjectCode'),
-                    style: const TextStyle(
-                      color: ink,
-                      fontSize: 30,
-                      letterSpacing: -1,
-                      fontWeight: FontWeight.w800,
+                      child: const Icon(
+                        Icons.school_outlined,
+                        color: fptOrange,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'LỚP ${str(c, 'classCode')}',
-                    style: const TextStyle(
-                      color: ink,
-                      fontSize: 11,
-                      letterSpacing: 1.5,
+                    const Spacer(),
+                    badge(str(c, 'semester'), color: muted),
+                  ],
+                ),
+                const SizedBox(height: 23),
+                title(str(c, 'classCode')),
+                const SizedBox(height: 5),
+                subtitle('Môn học • ${str(c, 'subjectCode')}'),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    const Icon(Icons.people_outline, size: 17, color: muted),
+                    const SizedBox(width: 7),
+                    Text(
+                      '${c['studentCount'] ?? 0} sinh viên',
+                      style: const TextStyle(fontSize: 12),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 21, 10, 4),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.people_outline, size: 17, color: muted),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Text(
-                          '${c['studentCount'] ?? 0} sinh viên',
-                          style: const TextStyle(fontSize: 12),
+                    const Spacer(),
+                    Text(
+                      '${c['totalSessions'] ?? 0} buổi học',
+                      style: const TextStyle(color: muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Divider(height: 1),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        c['sheetName'] == null
+                            ? 'Chưa liên kết Sheet'
+                            : 'Đã liên kết Google Sheet',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: c['sheetName'] == null ? muted : green,
                         ),
                       ),
-                      Text(
-                        '${c['totalSessions'] ?? 0} buổi học',
-                        style: const TextStyle(color: muted, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Divider(height: 1),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          c['sheetName'] == null
-                              ? 'Chưa liên kết Sheet'
-                              : 'Đã liên kết Google Sheet',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: c['sheetName'] == null ? muted : green,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: s.busy
-                            ? null
-                            : () => action(() async {
-                                await s.selectClass(c);
-                                if (mounted) setState(() => page = 2);
-                              }),
-                        child: const Text('Mở lớp ↗'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    TextButton(
+                      onPressed: s.busy
+                          ? null
+                          : () => action(() async {
+                              await s.selectClass(c);
+                              setState(() => page = 2);
+                            }),
+                      child: const Text('Mở lớp →'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.all(10),
-      );
-    }).toList(),
+          ),
+        )
+        .toList(),
     minWidth: 285,
   );
   Widget searchBox(String hint) => SizedBox(
@@ -1288,7 +1123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           (x) => DropdownMenuItem(
             value: x['id'] as int,
             child: Text(
-              '#${x['id']} • ${getFptSlot(x['startTime'])}',
+              '#${x['id']} • ${date(x['startTime'])} • ${x['room'] ?? 'Chưa có phòng'}',
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -1324,7 +1159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       heading(
-        '03 / LỊCH BUỔI HỌC',
+        'SESSION MANAGEMENT',
         'Buổi học',
         'Chọn lớp học để quản lý các phiên điểm danh.',
         trailing: button(
@@ -1414,61 +1249,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Column(
             children: s.sessions
                 .map(
-                  (x) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Material(
-                      color: const Color(0xFFF7F8F1),
-                      borderRadius: BorderRadius.circular(14),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 13,
-                        ),
-                        leading: Container(
-                          width: 48,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: x['status'] == 'OPEN'
-                                ? studioLime
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            date(x['startTime']).split('/').first,
-                            style: const TextStyle(
-                              fontSize: 23,
-                              fontWeight: FontWeight.w700,
-                              color: ink,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          'Buổi #${x['id']} · ${date(x['startTime'])}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            'Lúc ${date(x['startTime'], time: true)}',
-                            style: const TextStyle(color: muted, fontSize: 12),
-                          ),
-                        ),
-                        trailing: badge(
-                          x['status'] == 'OPEN' ? 'Đang mở' : 'Đã đóng',
-                          color: x['status'] == 'OPEN' ? green : muted,
-                        ),
-                        onTap: s.busy
-                            ? null
-                            : () => action(() async {
-                                await s.selectSession(x);
-                                if (mounted) setState(() => page = 3);
-                              }),
+                  (x) => ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    leading: Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: paleOrange,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today_outlined,
+                        color: fptOrange,
+                        size: 21,
                       ),
                     ),
+                    title: Text(
+                      'Buổi #${x['id']} • ${date(x['startTime'])}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      '${date(x['startTime'], time: true)}  ·  Phòng ${x['room'] ?? '—'}',
+                    ),
+                    trailing: badge(
+                      x['status'] == 'OPEN' ? 'Đang mở' : 'Đã đóng',
+                      color: x['status'] == 'OPEN' ? green : muted,
+                    ),
+                    onTap: s.busy
+                        ? null
+                        : () => action(() async {
+                            await s.selectSession(x);
+                            setState(() => page = 3);
+                          }),
                   ),
                 )
                 .toList(),
@@ -1480,7 +1294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       heading(
-        '04 / ĐIỂM DANH TRỰC TIẾP',
+        'LIVE ATTENDANCE',
         'Điểm danh lớp học',
         'Một mã QR. Cả lớp kết nối. Kết quả cập nhật mỗi 5 giây.',
         trailing: button(
@@ -1568,20 +1382,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: valid ? ink.withValues(alpha: 0.5) : line,
-          width: valid ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: valid
-            ? [
-                const BoxShadow(
-                  color: Color(0x10173D35),
-                  blurRadius: 40,
-                  spreadRadius: 5,
-                ),
-              ]
-            : [],
+        border: Border.all(color: line),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: valid
           ? QrImageView(
@@ -1680,9 +1482,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         Row(
           children: [
-            const Icon(Icons.access_time, color: muted, size: 18),
+            const Icon(Icons.meeting_room_outlined, color: muted, size: 18),
             const SizedBox(width: 8),
-            Expanded(child: Text('Lúc ${date(s.selectedSession?['startTime'], time: true)}')),
+            Expanded(child: Text('Phòng ${str(s.selectedSession, 'room')}')),
             Text(
               date(s.selectedSession?['startTime'], time: true),
               style: const TextStyle(color: muted, fontSize: 12),
@@ -1759,7 +1561,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         selected: filter == f.$1,
                         onSelected: (_) => setState(() => filter = f.$1),
                         showCheckmark: false,
-                        selectedColor: studioLime,
+                        selectedColor: paleOrange,
                         side: BorderSide(
                           color: filter == f.$1
                               ? fptOrange.withValues(alpha: .25)
@@ -1936,67 +1738,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       heading(
-        '05 / BÁO CÁO',
+        'ATTENDANCE REPORTS',
         'Báo cáo điểm danh',
         'Xuất kết quả buổi học vào Google Sheet đã liên kết với lớp.',
       ),
       selectors(),
       const SizedBox(height: 24),
-      if (s.selectedSession != null) ...[
-        panel(
-          LayoutBuilder(
-            builder: (context, c) {
-              final summary = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  badge(s.open ? 'BUỔI HỌC ĐANG MỞ' : 'BUỔI HỌC ĐÃ ĐÓNG'),
-                  const SizedBox(height: 16),
-                  title(
-                    '${str(s.selectedClass, 'classCode')} · Buổi #${s.selectedSession!['id']}',
-                    size: 23,
-                  ),
-                  const SizedBox(height: 10),
-                  subtitle(
-                    '${s.present} / ${s.total} sinh viên đã được ghi nhận có mặt.',
-                  ),
-                  const SizedBox(height: 17),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 10,
-                    children: [
-                      badge('${s.present} đã điểm danh', color: ink),
-                      badge('${s.remaining} chưa có mặt', color: premiumOrange),
-                    ],
-                  ),
-                ],
-              );
-              return c.maxWidth < 530
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: AttendanceRing(
-                            present: s.present,
-                            total: s.total,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        summary,
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        AttendanceRing(present: s.present, total: s.total),
-                        const SizedBox(width: 36),
-                        Expanded(child: summary),
-                      ],
-                    );
-            },
-          ),
-          color: const Color(0xFFFAFBEF),
-        ),
-        const SizedBox(height: 24),
-      ],
       panel(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2036,86 +1783,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       heading(
-        '06 / TÀI KHOẢN',
+        'ACCOUNT & CONNECTION',
         'Tài khoản & kết nối',
-        'Không gian cá nhân và kết nối dữ liệu của bạn.',
+        'Thông tin được xác thực bởi hệ thống của nhà trường.',
       ),
       panel(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(26),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6EDCD),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'HỒ SƠ GIẢNG DẠY',
-                      style: TextStyle(
-                        color: ink,
-                        fontSize: 11,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w700,
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: const Color(0xFFFFF2E8),
+              backgroundImage: str(s.user, 'avatarUrl').isNotEmpty
+                  ? NetworkImage(str(s.user, 'avatarUrl'))
+                  : null,
+              child: str(s.user, 'avatarUrl').isEmpty
+                  ? Text(
+                      str(s.user, 'fullName').isNotEmpty
+                          ? str(s.user, 'fullName')[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        color: fptOrange,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ),
-                  Icon(Icons.fingerprint, color: ink, size: 36),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  title(str(s.user, 'fullName'), size: 24),
+                  const SizedBox(height: 8),
+                  subtitle(str(s.user, 'email')),
+                  const SizedBox(height: 12),
+                  badge(str(s.user, 'role') == 'TEACHER' ? 'GIẢNG VIÊN' : 'SINH VIÊN', color: fptOrange),
                 ],
               ),
             ),
-            const SizedBox(height: 26),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: ink,
-                  child: Text(
-                    str(s.user, 'fullName', 'U').isEmpty
-                        ? 'U'
-                        : str(s.user, 'fullName')[0].toUpperCase(),
-                    style: const TextStyle(color: studioLime, fontSize: 26),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      title(str(s.user, 'fullName'), size: 25),
-                      const SizedBox(height: 7),
-                      subtitle(str(s.user, 'email')),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 16,
-              runSpacing: 14,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                badge(s.student ? 'SINH VIÊN' : 'GIẢNG VIÊN', color: ink),
-                button(
-                  'Đồng bộ dữ liệu',
-                  Icons.sync,
-                  () => action(() async {
-                    s.user = await s.api.me();
-                  }),
-                ),
-              ],
+            button(
+              'Đồng bộ dữ liệu',
+              Icons.sync,
+              () => action(() async {
+                s.user = await s.api.me();
+              }),
             ),
           ],
         ),
       ),
-
     ],
   );
   Widget studentPage() => Column(
@@ -2245,8 +1961,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> createSession() async {
     final id = s.selectedClass!['id'] as int;
     await action(() async {
-      final slot = getFptSlot(DateTime.now().toUtc().toIso8601String());
-      final item = await s.api.createSession(id, slot);
+      // Gọi API trực tiếp không cần nhập thông tin
+      final item = await s.api.createSession(id, ''); 
       await s.reload();
       await s.selectSession(item);
       if (mounted) setState(() => page = 3);
@@ -2273,7 +1989,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> closeSession() async {
     if (!await confirm(
           'Kết thúc điểm danh?',
-          'Mã QR sẽ ngừng hoạt động. Các sinh viên chưa quét mã sẽ tự động bị đánh vắng.',
+          'Mã QR sẽ ngừng hoạt động. Backend sẽ ghi nhận vắng cho sinh viên chưa điểm danh.',
           'Kết thúc',
         ) ||
         !mounted) {
@@ -2469,7 +2185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         children: [
                           title(
-                            '${str(s.selectedClass, 'classCode')} • Lượt #${str(s.selectedSession, 'id')}',
+                            '${str(s.selectedClass, 'classCode')} • Phòng ${str(s.selectedSession, 'room')}',
                             size: 30,
                           ),
                           const SizedBox(height: 12),

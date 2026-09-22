@@ -4,6 +4,7 @@ import dto.SheetRosterRow;
 import exception.ApiException;
 import exception.ErrorCode;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.*;
@@ -55,8 +56,23 @@ public class GoogleSheetService {
             return cachedClient;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.SHEET_ERROR,
-                    "Không khởi tạo được Sheets client: " + e.getMessage());
+                    extractGoogleApiError(e, "Không khởi tạo được Sheets client"));
         }
+    }
+
+    private String extractGoogleApiError(Exception e, String defaultMessage) {
+        if (e instanceof GoogleJsonResponseException) {
+            GoogleJsonResponseException ge = (GoogleJsonResponseException) e;
+            if (ge.getStatusCode() == 403) {
+                return "Hệ thống chưa được cấp quyền truy cập. Vui lòng thêm email hệ thống vào danh sách 'Người chỉnh sửa' (Editor) của file Google Sheet này.";
+            } else if (ge.getStatusCode() == 404) {
+                return "Không tìm thấy file Google Sheet. Vui lòng kiểm tra lại đường link hoặc ID.";
+            }
+            if (ge.getDetails() != null && ge.getDetails().getMessage() != null) {
+                return defaultMessage + " (" + ge.getDetails().getMessage() + ")";
+            }
+        }
+        return defaultMessage + " (" + e.getMessage() + ")";
     }
 
     // ==================== LIST SHEET TABS ====================
@@ -75,7 +91,7 @@ public class GoogleSheetService {
             return tabs;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.SHEET_ERROR,
-                    "Không lấy được danh sách tab: " + e.getMessage());
+                    extractGoogleApiError(e, "Không lấy được danh sách tab"));
         }
     }
 
@@ -120,7 +136,7 @@ public class GoogleSheetService {
         } catch (Exception e) {
             log.error("Import roster failed", e);
             throw new ApiException(ErrorCode.SHEET_ERROR,
-                    "Không đọc được tab '" + sheetName + "': " + e.getMessage());
+                    extractGoogleApiError(e, "Không đọc được tab '" + sheetName + "'"));
         }
     }
 
@@ -173,7 +189,7 @@ public class GoogleSheetService {
             throw e;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.SHEET_ERROR,
-                    "Không ghi được tab '" + sheetName + "': " + e.getMessage());
+                    extractGoogleApiError(e, "Không ghi được tab '" + sheetName + "'"));
         }
     }
 

@@ -36,7 +36,8 @@ class ApiService {
     final uri = Uri.parse('${baseUrl.replaceAll(RegExp(r'/+$'), '')}/v1$path')
         .replace(queryParameters: query);
     final request = http.Request(method, uri)
-      ..headers['Accept'] = 'application/json';
+      ..headers['Accept'] = 'application/json'
+      ..headers['Bypass-Tunnel-Reminder'] = 'true';
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     if (body != null) {
       request.headers['Content-Type'] = 'application/json; charset=utf-8';
@@ -53,7 +54,7 @@ class ApiService {
           payload = jsonDecode(utf8.decode(response.bodyBytes)) as Json;
         } catch (_) {
           throw ApiException(
-            'Máy chủ trả về dữ liệu không hợp lệ (${response.statusCode}). Kiểm tra địa chỉ backend.',
+            'Hệ thống trả về dữ liệu không hợp lệ (${response.statusCode}). Kiểm tra lại địa chỉ kết nối.',
             response.statusCode,
           );
         }
@@ -71,10 +72,10 @@ class ApiService {
       }
       return payload['data'];
     } on TimeoutException {
-      throw const ApiException('Máy chủ phản hồi quá lâu. Vui lòng thử lại.');
+      throw const ApiException('Hệ thống phản hồi quá lâu. Vui lòng thử lại.');
     } on http.ClientException {
       throw const ApiException(
-        'Không kết nối được backend. Kiểm tra địa chỉ máy chủ và kết nối mạng.',
+        'Không kết nối được với hệ thống. Vui lòng kiểm tra địa chỉ kết nối và mạng.',
       );
     }
   }

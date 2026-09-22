@@ -8,7 +8,11 @@ try {
     }
     $env:GOOGLE_CLIENT_ID = $oauth.GOOGLE_DESKTOP_CLIENT_ID
     if ($PublicBaseUrl) { $env:ATTENDANCE_PUBLIC_BASE_URL = $PublicBaseUrl.TrimEnd('/') }
-    if ($WebClientId) { $env:GOOGLE_WEB_CLIENT_ID = $WebClientId }
+    if ($WebClientId) { 
+        $env:GOOGLE_WEB_CLIENT_ID = $WebClientId 
+    } elseif ($oauth.GOOGLE_WEB_CLIENT_ID) {
+        $env:GOOGLE_WEB_CLIENT_ID = $oauth.GOOGLE_WEB_CLIENT_ID
+    }
     & .\mvnw.cmd spring-boot:run
     if ($LASTEXITCODE -ne 0) { throw 'Backend failed to start.' }
 } finally {
