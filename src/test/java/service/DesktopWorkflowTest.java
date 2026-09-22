@@ -41,9 +41,11 @@ class DesktopWorkflowTest {
         when(qr.getTtlSeconds()).thenReturn(600L);
         when(qr.generateForSession(9L)).thenReturn("new-token");
         var service = new SessionService(sessions, mock(ClassRepository.class), mock(EnrollmentRepository.class), mock(AttendanceRepository.class), qr);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "publicBaseUrl", "https://attendance.example/");
         Instant before = Instant.now();
         SessionResponse result = service.refreshQr(9L, teacher);
         assertEquals("new-token", result.getQrToken());
+        assertEquals("https://attendance.example/check-in.html#token=new-token", result.getQrUrl());
         assertEquals(session.getQrExpiresAt(), result.getQrExpiresAt());
         assertTrue(result.getQrExpiresAt().isAfter(oldExpiry));
         assertFalse(result.getQrExpiresAt().isBefore(before.plusSeconds(600)));

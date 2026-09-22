@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,7 +27,7 @@ public class ClassService {
 
     @Transactional
     public ClassResponse create(CreateClassRequest req, User teacher) {
-        if (classRepository.existsByClassCode(req.getClassCode())) {
+        if (classRepository.existsByClassCodeAndTeacherId(req.getClassCode(), teacher.getId())) {
             throw new ApiException(ErrorCode.CLASS_CODE_EXISTS);
         }
         ClassRoom cls = ClassRoom.builder()

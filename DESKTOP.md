@@ -15,11 +15,17 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:8080
 
 Mã backend hiện tại không cấu hình context path `/api`. App tự thêm `/v1` vào API_BASE_URL. Nếu triển khai sau reverse proxy có `/api`, dùng `http://host:port/api`. Có thể thay địa chỉ ngay ở mục **Cấu hình kết nối** trên màn hình đăng nhập.
 
-Nhấn **Đăng nhập với devtest** để vào trực tiếp bằng `devtest@gmail.com`, vai trò `TEACHER`, không cần Google hay mật khẩu. Nút này gọi `POST /v1/dev/login`, sau đó lấy thông tin tài khoản và lớp học bằng JWT backend cấp. Endpoint yêu cầu Spring profile `dev` (repository hiện đã cấu hình profile này). Google là lựa chọn đăng nhập phụ.
+Nhấn **Đăng nhập với Google**, chọn tài khoản trong trình duyệt rồi quay lại ứng dụng. App gửi ID token tới backend để nhận JWT và tải dữ liệu theo quyền tài khoản.
 
-Trong debug, mục **Đăng nhập dành cho developer** vẫn cho phép đổi email và vai trò để kiểm thử tài khoản khác; email mặc định là `devtest@gmail.com`. Mục tùy chỉnh này chỉ xuất hiện ở release khi truyền `--dart-define=ENABLE_DEV_LOGIN=true`.
+Đăng nhập developer bị ẩn theo mặc định. Chỉ bật khi kiểm thử bằng --dart-define=ENABLE_DEV_LOGIN=true và backend profile dev.
 
 ## Google OAuth cho desktop
+
+Máy hiện tại đã có cấu hình OAuth Desktop trong `google-oauth.local.json` (được gitignore). Chạy `powershell -ExecutionPolicy Bypass -File .\run-google.ps1` để Flutter nhận cấu hình này. Khi build dùng `flutter build windows --dart-define-from-file=google-oauth.local.json`. Chạy Flutter không truyền file cấu hình sẽ thiếu Client ID.
+
+Backend đã dùng cùng Desktop Client ID mặc định trong `application.properties`; khởi động lại backend để áp dụng. Nếu IDE có biến môi trường `GOOGLE_CLIENT_ID` cũ, bỏ biến đó hoặc thay bằng Client ID trong file cấu hình local. File service account phục vụ Google Sheets, độc lập với OAuth đăng nhập.
+
+Để backend luôn lấy cùng Client ID với Flutter, dừng backend cũ rồi chạy `powershell -ExecutionPolicy Bypass -File .\run-backend-google.ps1`. Khi khởi động, log `Google OAuth configured for client ID` cho biết Client ID thực tế đang dùng (không ghi token hay client secret).
 
 Tạo OAuth client loại **Desktop app** trong Google Cloud. Backend xác minh audience của Google ID token nên `GOOGLE_CLIENT_ID` của backend phải trùng client ID desktop. Không thể dùng nguyên client ID web/Android làm desktop loopback client.
 
@@ -29,11 +35,23 @@ flutter run -d windows --dart-define=GOOGLE_DESKTOP_CLIENT_ID=YOUR_DESKTOP_CLIEN
 
 Ứng dụng mở trình duyệt hệ thống, dùng Authorization Code + PKCE, kiểm tra state, nhận callback tại loopback `127.0.0.1` với cổng ngẫu nhiên, rồi gửi ID token đến `POST /v1/auth/google`. Client secret ở đây là thông tin client **installed app** theo cấu hình Google, không phải service-account private key hay web-client secret. Không đưa file service account vào Flutter.
 
+Trước khi khởi động backend, đặt biến môi trường GOOGLE_CLIENT_ID bằng cùng Desktop Client ID đã truyền cho Flutter. Tài khoản Google mới được tự động tạo với vai trò TEACHER để dùng ngay ứng dụng giảng viên. Không cần đăng ký email qua dev hoặc có trong danh sách lớp trước khi đăng nhập. Tài khoản đã tồn tại giữ nguyên vai trò (kể cả STUDENT được import từ Sheet); Google login không tự đổi quyền của tài khoản cũ. Khởi động lại backend sau khi cập nhật mã.
+
+### Cho phép mọi tài khoản Google
+
+Trong Google Cloud → Google Auth Platform → Audience, chọn **External**, không chọn Internal (chỉ dành cho tổ chức). Luồng đăng nhập hiện chỉ xin `openid email profile`, không giới hạn tên miền email. Với các scope nhận dạng cơ bản này, Google cho phép người dùng ngoài danh sách Test users đăng nhập cả khi ở Testing. Khi triển khai chính thức, chuyển ứng dụng sang In production. Chính sách của quản trị viên Google Workspace vẫn có thể chặn ứng dụng với tài khoản thuộc tổ chức đó.
+
+Client ID xác định ứng dụng, không phải email được phép đăng nhập. Chỉ cần cấu hình một Desktop OAuth client cho ứng dụng; mọi người dùng sử dụng cùng client này. Không dùng client ID Web thay cho Desktop và không bỏ bước xác minh ID token ở backend.
+
+Tham khảo: [Google — Manage App Audience](https://support.google.com/cloud/answer/15549945?hl=en).
+
 Nguồn: https://developers.google.com/identity/protocols/oauth2/native-app
 
-JWT chỉ được giữ trong bộ nhớ và gửi bằng `Authorization: Bearer`. Sau khi đóng ứng dụng cần đăng nhập lại. HTTP 401 đưa người dùng về màn hình đăng nhập. Backend vẫn quyết định vai trò và quyền truy cập.
+Trên Windows, JWT được lưu trong Windows Credential Manager của người dùng hiện tại và gửi bằng `Authorization: Bearer`. Mở lại ứng dụng sẽ kiểm tra phiên với backend rồi tải dữ liệu; chỉ khôi phục cho cùng địa chỉ backend. Đăng xuất hoặc HTTP 401 xóa phiên đã lưu. Backend hiện cấp JWT 24 giờ và chưa có refresh token, nên hết hạn phải đăng nhập Google lại. Mất kết nối tạm thời không xóa phiên đã lưu. Sau callback Google, ứng dụng yêu cầu Windows đưa cửa sổ lên trước (nếu bị Windows chặn thì nháy biểu tượng taskbar); tab trình duyệt thử tự đóng và có thông báo dự phòng nếu trình duyệt không cho phép.
 
 ## Luồng sử dụng
+
+Điểm danh bằng camera điện thoại: xem [QR-CHECK-IN.md](QR-CHECK-IN.md) để cấu hình HTTPS và Google Web Client ID. QR chứa đường dẫn mở form điểm danh, không còn chứa token thuần. Sinh viên đăng nhập Google, xem thông tin và xác nhận trên điện thoại.
 
 - **Lớp học của tôi** → Tạo lớp (mã lớp, mã môn, học kỳ) → Mở lớp.
 - **Nhập từ Google Sheet** → dán URL/ID spreadsheet → chọn tab. Backend cần có quyền đọc file.

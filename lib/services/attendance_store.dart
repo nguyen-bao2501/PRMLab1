@@ -1,16 +1,54 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
 import 'api_service.dart';
+import 'desktop_session.dart';
 
 class AttendanceStore extends ChangeNotifier {
-  AttendanceStore(this.api, {bool autoPoll = true}) {
+  AttendanceStore(this.api, {bool autoPoll = true, this.session}) {
     if (autoPoll) {
       _timer = Timer.periodic(const Duration(seconds: 5), (_) => poll());
     }
   }
   final ApiService api;
+  final DesktopSession? session;
+
+  Future<void> restoreSession() async {
+    await run(() async {
+      final generation = _generation;
+      final saved = await session?.read();
+      if (saved == null || _disposed || generation != _generation) return;
+      Json data;
+      try {
+        data = jsonDecode(saved) as Json;
+        if (data['baseUrl'] != api.baseUrl) return;
+        if (data['token'] is! String) throw const FormatException();
+      } catch (_) {
+        await session?.clear();
+        return;
+      }
+      api.token = data['token'] as String;
+      try {
+        final profile = await api.me();
+        if (_disposed || generation != _generation) return;
+        if (profile['role'] != 'TEACHER' && profile['role'] != 'STUDENT') {
+          await session?.clear();
+          throw const ApiException(
+            'Tài khoản này chưa có quyền giảng viên hoặc sinh viên.',
+          );
+        }
+        user = profile;
+        await reload();
+      } catch (_) {
+        api.token = null;
+        user = null;
+        rethrow;
+      }
+    });
+  }
+
   Timer? _timer;
   Json? user, selectedClass, selectedSession;
   List<Json> classes = [], sessions = [], attendances = [];
@@ -73,6 +111,13 @@ class AttendanceStore extends ChangeNotifier {
       api.token = null;
       rethrow;
     }
+    try {
+      await session?.write(
+        jsonEncode({'baseUrl': api.baseUrl, 'token': api.token}),
+      );
+    } catch (_) {
+      error = 'Đã đăng nhập nhưng không thể lưu phiên trên Windows.';
+    }
     await reload();
   }
 
@@ -130,6 +175,8 @@ class AttendanceStore extends ChangeNotifier {
       ...detail,
       if (item['qrToken'] != null && detail['status'] == 'OPEN')
         'qrToken': item['qrToken'],
+      if (item['qrUrl'] != null && detail['status'] == 'OPEN')
+        'qrUrl': item['qrUrl'],
     };
     attendances = rows;
     lastSync = DateTime.now();
@@ -173,9 +220,11 @@ class AttendanceStore extends ChangeNotifier {
       final rows = await api.attendances(id);
       if (generation != _generation || _disposed) return;
       final token = selectedSession?['qrToken'];
+      final qrUrl = selectedSession?['qrUrl'];
       selectedSession = {
         ...detail,
         'qrToken': detail['status'] == 'OPEN' ? token : null,
+        'qrUrl': detail['status'] == 'OPEN' ? qrUrl : null,
       };
       attendances = rows;
       lastSync = DateTime.now();
@@ -189,6 +238,12 @@ class AttendanceStore extends ChangeNotifier {
   }
 
   void logout() {
+    unawaited(
+      session?.clear().catchError((Object _) {
+        error = 'Không thể xóa phiên đã lưu trên Windows. Vui lòng thử đăng xuất lại.';
+        notifyListeners();
+      }),
+    );
     _generation++;
     api.token = null;
     user = null;

@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'browser_launcher.dart';
 
 import 'api_service.dart';
+import 'desktop_session.dart';
 
 /// Installed-app OAuth: system browser, loopback callback, state and PKCE.
 class GoogleAuth {
@@ -39,10 +40,16 @@ class GoogleAuth {
         return;
       }
       request.response.headers.contentType = ContentType.html;
+      request.response.headers.set('Cache-Control', 'no-store');
+      request.response.headers.set('Referrer-Policy', 'no-referrer');
       request.response.write(
-        '<meta charset="utf-8"><h2>FPT Attendance</h2><p>Bạn có thể đóng tab này và quay lại ứng dụng.</p>',
+        '<meta charset="utf-8"><title>FPT Attendance</title>'
+        '<script>history.replaceState(null,"","/callback");window.close();</script>'
+        '<h2>Đang quay lại FPT Attendance…</h2>'
+        '<p>Nếu tab chưa tự đóng, bạn có thể đóng tab này và tiếp tục trong ứng dụng.</p>',
       );
       await request.response.close();
+      await DesktopSession.focus();
       if (!result.isCompleted) {
         if (params['code'] != null) {
           result.complete(params['code']);

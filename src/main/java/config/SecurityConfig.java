@@ -31,6 +31,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/v1/auth/**",
+                                "/check-in.html", "/check-in.js", "/check-in.css",
+                                "/v1/public/attendance/**",
                                 "/actuator/health",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

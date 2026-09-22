@@ -9,7 +9,8 @@ const ink = Color(0xFF192B3D);
 const muted = Color(0xFF768393);
 
 class AttendanceApp extends StatelessWidget {
-  const AttendanceApp({super.key, this.store});
+  const AttendanceApp({super.key, this.store, this.googleSignIn});
+  final Future<String> Function()? googleSignIn;
   final AttendanceStore? store;
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -64,6 +65,6 @@ class AttendanceApp extends StatelessWidget {
         ),
       ),
     ),
-    home: DashboardScreen(store: store),
+    home: DashboardScreen(store: store, googleSignIn: googleSignIn),
   );
 }

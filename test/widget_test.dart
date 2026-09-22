@@ -41,6 +41,7 @@ AttendanceStore fixture() {
     'status': 'OPEN',
     'totalStudents': 32,
     'qrToken': 'test-only-preview-token',
+    'qrUrl': 'https://attendance.example/check-in.html#token=0123456789abcdef0123456789abcdef',
     'qrExpiresAt': DateTime.now()
         .add(const Duration(minutes: 8))
         .toIso8601String(),
@@ -83,6 +84,11 @@ Future<void> screenshot(WidgetTester tester, GlobalKey key, String name) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('fpt_attendance/desktop'),
+          (_) async => null,
+        );
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -107,15 +113,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Đăng nhập với Google'), findsOneWidget);
-    expect(find.text('Đăng nhập với devtest'), findsOneWidget);
+    expect(find.text('Đăng nhập với devtest'), findsNothing);
+    expect(find.text('Đăng nhập dành cho developer'), findsNothing);
     expect(find.text('Chào mừng trở lại'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await screenshot(tester, key, 'login');
     await tester.pumpWidget(const SizedBox());
   });
-  testWidgets('Devtest signs in directly as teacher without Google', (
-    tester,
-  ) async {
+  testWidgets('Google exchanges ID token for backend session', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -125,7 +130,7 @@ void main() {
         client: MockClient((request) async {
           requests.add(request);
           final dynamic data = switch (request.url.path) {
-            '/v1/dev/login' => {'accessToken': 'devtest-jwt'},
+            '/v1/auth/google' => {'accessToken': 'google-jwt'},
             '/v1/auth/me' => {
               'fullName': 'Dev TEACHER',
               'email': 'devtest@gmail.com',
@@ -143,19 +148,18 @@ void main() {
       autoPoll: false,
     );
     addTearDown(store.dispose);
-    await tester.pumpWidget(AttendanceApp(store: store));
-    await tester.tap(find.text('Đăng nhập với devtest'));
+    await tester.pumpWidget(
+      AttendanceApp(store: store, googleSignIn: () async => 'google-id-token'),
+    );
+    await tester.tap(find.text('Đăng nhập với Google'));
     await tester.pumpAndSettle();
-    expect(jsonDecode(requests.first.body), {
-      'email': 'devtest@gmail.com',
-      'role': 'TEACHER',
-    });
+    expect(jsonDecode(requests.first.body), {'idToken': 'google-id-token'});
     expect(requests.map((r) => r.url.path).toList(), [
-      '/v1/dev/login',
+      '/v1/auth/google',
       '/v1/auth/me',
       '/v1/classes',
     ]);
-    expect(requests[1].headers['Authorization'], 'Bearer devtest-jwt');
+    expect(requests[1].headers['Authorization'], 'Bearer google-jwt');
     expect(find.text('Một ngày dạy học hiệu quả'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());

@@ -25,6 +25,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SessionService {
 
+    @org.springframework.beans.factory.annotation.Value("${app.attendance.public-base-url:}")
+    private String publicBaseUrl = "";
+
+    @jakarta.annotation.PostConstruct
+    void validatePublicUrl() {
+        if (publicBaseUrl.isBlank()) return;
+        java.net.URI uri = java.net.URI.create(publicBaseUrl);
+        if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null
+                || uri.getFragment() != null || !("https".equals(uri.getScheme())
+                || ("http".equals(uri.getScheme()) && "localhost".equals(uri.getHost())))) {
+            throw new IllegalArgumentException("ATTENDANCE_PUBLIC_BASE_URL must be an HTTPS URL (localhost allowed for testing)");
+        }
+    }
+
     private final SessionRepository sessionRepository;
     private final ClassRepository classRepository;
     private final EnrollmentRepository enrollmentRepository;
@@ -150,6 +164,8 @@ public class SessionService {
                 .room(s.getRoom())
                 .status(s.getStatus().name())
                 .qrToken(qrToken)
+                .qrUrl(qrToken == null || publicBaseUrl.isBlank() ? null
+                        : publicBaseUrl.replaceAll("/+$", "") + "/check-in.html#token=" + qrToken)
                 .qrExpiresAt(s.getQrExpiresAt());
 
         if (includeStats) {

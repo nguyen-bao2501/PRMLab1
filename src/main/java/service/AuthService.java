@@ -61,20 +61,20 @@ public class AuthService {
             }
             // Cập nhật googleId + avatar nếu chưa có
             if (u.getGoogleId() == null) u.setGoogleId(googleId);
-            if (u.getAvatarUrl() == null) u.setAvatarUrl(picture);
-            if (u.getFullName() == null) u.setFullName(name);
+            if (picture != null) u.setAvatarUrl(picture);
+            if (name != null) u.setFullName(name);
             return userRepository.save(u);
         }).orElseGet(() -> {
             // Tạo user mới (chưa có trong hệ thống)
             log.info("Tạo user mới: {} - {}", normalizedEmail, name);
-            // User này chưa nằm trong roster. Có thể là giáo viên/admin đã được
-            // tạo sẵn; học sinh sẽ bị chặn ở check-in nếu email không có trong lớp.
+            // Ứng dụng giảng viên cho phép tự đăng ký bằng Google,
+            // không cần tạo email qua dev login trước.
             return userRepository.save(User.builder()
                     .googleId(googleId)
                     .email(normalizedEmail)
                     .fullName(name)
                     .avatarUrl(picture)
-                    .role(User.Role.STUDENT)
+                    .role(User.Role.TEACHER)
                     .isActive(true)
                     .build());
         });

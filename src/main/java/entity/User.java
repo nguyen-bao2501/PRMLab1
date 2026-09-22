@@ -2,6 +2,7 @@ package entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Nationalized;
 import java.time.Instant;
 
 @Entity
@@ -19,6 +20,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Nationalized
     @Column(name = "full_name")
     private String fullName;
 

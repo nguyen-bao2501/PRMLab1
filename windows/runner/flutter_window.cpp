@@ -1,6 +1,9 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+#include <wincred.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -26,6 +29,61 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+
+  flutter::MethodChannel<flutter::EncodableValue> channel(
+      flutter_controller_->engine()->messenger(), "fpt_attendance/desktop",
+      &flutter::StandardMethodCodec::GetInstance());
+  channel.SetMethodCallHandler([this](const auto& call, auto result) {
+    const wchar_t* target = L"FPTAttendance/Session";
+    if (call.method_name() == "focus") {
+      HWND hwnd = GetHandle();
+      ShowWindow(hwnd, IsIconic(hwnd) ? SW_RESTORE : SW_SHOW);
+      // Windows may reject activation while another application has focus.
+      if (!SetForegroundWindow(hwnd)) {
+        FLASHWINFO flash = {sizeof(FLASHWINFO), hwnd, FLASHW_TRAY, 3, 0};
+        FlashWindowEx(&flash);
+      }
+      result->Success();
+    } else if (call.method_name() == "readSession") {
+      PCREDENTIALW credential = nullptr;
+      if (CredReadW(target, CRED_TYPE_GENERIC, 0, &credential)) {
+        std::string value(reinterpret_cast<char*>(credential->CredentialBlob),
+                          credential->CredentialBlobSize);
+        CredFree(credential);
+        result->Success(flutter::EncodableValue(value));
+      } else if (GetLastError() == ERROR_NOT_FOUND) {
+        result->Success();
+      } else {
+        result->Error("credential_read", "Cannot read Windows credential.");
+      }
+    } else if (call.method_name() == "writeSession") {
+      const auto* value = call.arguments()
+          ? std::get_if<std::string>(call.arguments()) : nullptr;
+      if (!value || value->size() > CRED_MAX_CREDENTIAL_BLOB_SIZE) {
+        result->Error("credential_size", "Invalid session data.");
+        return;
+      }
+      CREDENTIALW credential = {};
+      credential.Type = CRED_TYPE_GENERIC;
+      credential.TargetName = const_cast<wchar_t*>(target);
+      credential.CredentialBlobSize = static_cast<DWORD>(value->size());
+      credential.CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<char*>(value->data()));
+      credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
+      if (CredWriteW(&credential, 0)) {
+        result->Success();
+      } else {
+        result->Error("credential_write", "Cannot save Windows credential.");
+      }
+    } else if (call.method_name() == "clearSession") {
+      if (CredDeleteW(target, CRED_TYPE_GENERIC, 0) || GetLastError() == ERROR_NOT_FOUND) {
+        result->Success();
+      } else {
+        result->Error("credential_delete", "Cannot delete Windows credential.");
+      }
+    } else {
+      result->NotImplemented();
+    }
+  });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();

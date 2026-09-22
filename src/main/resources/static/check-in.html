@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Điểm danh • FPT Attendance</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="check-in.css">
+  <script src="check-in.js" defer></script>
+</head>
+<body>
+  <div class="blob-c">
+    <div class="shape-blob one"></div>
+    <div class="shape-blob two"></div>
+    <div class="shape-blob three"></div>
+  </div>
+  
+  <main class="glass-card">
+    <div class="header-brand">
+      <span class="brand-f">F</span><span class="brand-p">P</span><span class="brand-t">T</span> <span class="brand-uni">UNIVERSITY</span>
+    </div>
+    
+    <div class="title-section">
+      <p class="eyebrow"><i class="fa-solid fa-qrcode"></i> ĐIỂM DANH SINH VIÊN</p>
+      <h1>Xác nhận có mặt</h1>
+      <p class="subtitle">Đăng nhập bằng tài khoản Google để xác nhận sự hiện diện của bạn trong lớp học hôm nay.</p>
+    </div>
+
+    <div id="message" role="status" aria-live="polite">
+      <i class="fa-solid fa-circle-notch fa-spin"></i> Đang kiểm tra cấu hình…
+    </div>
+    
+    <div class="google-wrapper">
+      <div id="google-button"></div>
+    </div>
+    
+    <form id="identity" hidden>
+      <div class="input-group">
+        <label><i class="fa-regular fa-user"></i> Họ và tên</label>
+        <input id="full-name" readonly>
+      </div>
+      
+      <div class="input-group">
+        <label><i class="fa-solid fa-hashtag"></i> Mã số sinh viên</label>
+        <input id="student-code" readonly>
+      </div>
+      
+      <div class="input-group">
+        <label><i class="fa-regular fa-envelope"></i> Email Google</label>
+        <input id="email" type="email" readonly>
+      </div>
+      
+      <button id="confirm" type="submit" hidden class="btn-primary">
+        <span>Xác nhận điểm danh</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </form>
+    
+    <button id="switch" class="btn-secondary" hidden>
+      <i class="fa-solid fa-arrows-rotate"></i> Đổi tài khoản Google
+    </button>
+    
+    <div class="footer-note">
+      <i class="fa-solid fa-shield-halved"></i>
+      <p class="note">Mỗi sinh viên chỉ được điểm danh một lần. Mã QR hết hạn hoặc buổi học đã đóng sẽ không được chấp nhận.</p>
+    </div>
+  </main>
+</body>
+</html>
