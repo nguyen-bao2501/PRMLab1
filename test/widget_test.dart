@@ -101,6 +101,70 @@ void main() {
       await loader.load();
     }
   });
+  testWidgets('Studio pages render at desktop and phone widths', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = fixture();
+    addTearDown(store.dispose);
+    store.classes.addAll([
+      {
+        ...store.classes.first,
+        'id': 2,
+        'classCode': 'SE1920',
+        'subjectCode': 'PRN232',
+      },
+      {
+        ...store.classes.first,
+        'id': 3,
+        'classCode': 'SE1908',
+        'subjectCode': 'SWP391',
+      },
+    ]);
+    for (final width in [1440.0, 390.0]) {
+      tester.view.physicalSize = Size(width, 1000);
+      final key = GlobalKey();
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: key,
+          child: AttendanceApp(store: store),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'Overview at $width');
+      await screenshot(tester, key, 'studio-overview-${width.round()}');
+      final pages = {
+        'Lớp học của tôi': 'classes',
+        'Buổi học': 'sessions',
+        'Điểm danh': 'attendance',
+        'Báo cáo': 'reports',
+        'Tài khoản & kết nối': 'account',
+      };
+      for (final entry in pages.entries) {
+        if (width < 700) {
+          await tester.tap(find.byTooltip('Mở điều hướng'));
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(
+          width < 700
+              ? find.descendant(
+                  of: find.byType(Drawer),
+                  matching: find.text(entry.key),
+                )
+              : find.text(entry.key).first,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '${entry.key} at $width',
+        );
+        await screenshot(tester, key, 'studio-${entry.value}-${width.round()}');
+      }
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
   testWidgets('Login shows real authentication and no fake dashboard data', (
     tester,
   ) async {
@@ -118,6 +182,25 @@ void main() {
     expect(find.text('Chào mừng trở lại'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await screenshot(tester, key, 'login');
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('Login and connection settings fit a phone viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      RepaintBoundary(key: key, child: const AttendanceApp()),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Cấu hình kết nối'));
+    await tester.pumpAndSettle();
+    expect(find.text('Địa chỉ backend'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await screenshot(tester, key, 'studio-login-390');
     await tester.pumpWidget(const SizedBox());
   });
   testWidgets('Google exchanges ID token for backend session', (tester) async {

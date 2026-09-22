@@ -1,75 +1,117 @@
 <!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="referrer" content="no-referrer">
-  <title>Điểm danh • FPT Attendance</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <link rel="stylesheet" href="check-in.css">
-  <script src="check-in.js" defer></script>
-</head>
-<body>
-  <div class="blob-c">
-    <div class="shape-blob one"></div>
-    <div class="shape-blob two"></div>
-    <div class="shape-blob three"></div>
-  </div>
-  
-  <main class="glass-card">
-    <div class="header-brand">
-      <span class="brand-f">F</span><span class="brand-p">P</span><span class="brand-t">T</span> <span class="brand-uni">UNIVERSITY</span>
-    </div>
-    
-    <div class="title-section">
-      <p class="eyebrow"><i class="fa-solid fa-qrcode"></i> ĐIỂM DANH SINH VIÊN</p>
-      <h1>Xác nhận có mặt</h1>
-      <p class="subtitle">Đăng nhập bằng tài khoản Google để xác nhận sự hiện diện của bạn trong lớp học hôm nay.</p>
-    </div>
-
-    <div id="message" role="status" aria-live="polite">
-      <i class="fa-solid fa-circle-notch fa-spin"></i> Đang kiểm tra cấu hình…
-    </div>
-    
-    <div class="google-wrapper">
-      <div id="google-button"></div>
-    </div>
-    
-    <form id="identity" hidden>
-      <div class="input-group">
-        <label><i class="fa-regular fa-user"></i> Họ và tên</label>
-        <input id="full-name" readonly>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#173d35" />
+    <meta
+      name="description"
+      content="Campus Studio — xác nhận điểm danh lớp học FPT University bằng tài khoản Google."
+    />
+    <title>Điểm danh · Campus Studio</title>
+    <link rel="stylesheet" href="check-in.css" />
+    <script src="check-in.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand" aria-label="FPT University">
+        <span class="brand-letters" aria-hidden="true"
+          ><b>F</b><b>P</b><b>T</b></span
+        ><span>UNIVERSITY</span>
       </div>
-      
-      <div class="input-group">
-        <label><i class="fa-solid fa-hashtag"></i> Mã số sinh viên</label>
-        <input id="student-code" readonly>
-      </div>
-      
-      <div class="input-group">
-        <label><i class="fa-regular fa-envelope"></i> Email Google</label>
-        <input id="email" type="email" readonly>
-      </div>
-      
-      <button id="confirm" type="submit" hidden class="btn-primary">
-        <span>Xác nhận điểm danh</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </button>
-    </form>
-    
-    <button id="switch" class="btn-secondary" hidden>
-      <i class="fa-solid fa-arrows-rotate"></i> Đổi tài khoản Google
-    </button>
-    
-    <div class="footer-note">
-      <i class="fa-solid fa-shield-halved"></i>
-      <p class="note">Mỗi sinh viên chỉ được điểm danh một lần. Mã QR hết hạn hoặc buổi học đã đóng sẽ không được chấp nhận.</p>
-    </div>
-  </main>
-</body>
+      <span class="edition">CAMPUS STUDIO <span>•</span> ĐIỂM DANH</span>
+    </header>
+    <main class="check-in-layout">
+      <section class="story" aria-labelledby="story-title">
+        <div class="story-top">
+          <span class="section-label">MỖI BUỔI HỌC ĐỀU CÓ Ý NGHĨA</span
+          ><span class="story-star" aria-hidden="true">✳</span>
+        </div>
+        <h1 id="story-title">
+          Hôm nay,<br />
+          bạn <em>có mặt.</em>
+        </h1>
+        <p class="story-description">
+          Một lần chạm để bắt đầu.<br />
+          Thêm một buổi học để tiến xa.
+        </p>
+        <div class="attendance-art" aria-hidden="true">
+          <div class="orbit"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="ticket">
+            <div class="ticket-top">CAMPUS PASS <span>↗</span></div>
+            <div class="ticket-mark">✓</div>
+            <div class="ticket-bottom">
+              <span>SẴN SÀNG<br />CHO BUỔI HỌC</span
+              ><span class="ticket-bars"></span>
+            </div>
+          </div>
+          <span class="art-note">KẾT NỐI TỪ NHỮNG ĐIỀU NHỎ</span>
+        </div>
+        <div class="story-footer">
+          <span>HỌC TẬP. KẾT NỐI. TRƯỞNG THÀNH.</span><span>↗</span>
+        </div>
+      </section>
+      <section class="check-in-card" aria-labelledby="form-title">
+        <div class="card-topline">
+          <span class="section-label">ĐIỂM DANH SINH VIÊN</span
+          ><span class="card-symbol" aria-hidden="true">↗</span>
+        </div>
+        <ol class="steps" aria-label="Các bước điểm danh">
+          <li id="step-login" aria-current="step"><span>01</span>Đăng nhập</li>
+          <li id="step-review"><span>02</span>Kiểm tra</li>
+          <li id="step-done"><span>03</span>Hoàn tất</li>
+        </ol>
+        <h2 id="form-title">Chào bạn,<br />sẵn sàng vào lớp?</h2>
+        <p id="form-description" class="subtitle">
+          Dùng tài khoản Google có trong danh sách lớp để xác nhận có mặt.
+        </p>
+        <div id="message" role="status" aria-live="polite" aria-atomic="true">
+          Đang chuẩn bị trang điểm danh…
+        </div>
+        <div class="google-wrapper"><div id="google-button"></div></div>
+        <form id="identity" hidden aria-label="Thông tin sinh viên">
+          <div class="identity-heading">
+            <span>THÔNG TIN CỦA BẠN</span><span>Đã xác thực Google</span>
+          </div>
+          <div class="input-group">
+            <label for="full-name">Họ và tên</label
+            ><input id="full-name" readonly autocomplete="name" />
+          </div>
+          <div class="input-group">
+            <label for="student-code">Mã số sinh viên</label
+            ><input id="student-code" readonly />
+          </div>
+          <div class="input-group">
+            <label for="email">Email Google</label
+            ><input id="email" type="email" readonly autocomplete="email" />
+          </div>
+          <button id="confirm" type="submit" hidden class="btn-primary">
+            <span>Xác nhận điểm danh</span><span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <button id="switch" class="btn-secondary" hidden>
+          Đổi tài khoản Google <span aria-hidden="true">↻</span>
+        </button>
+        <div id="success-note" class="success-note" hidden>
+          <span aria-hidden="true">✓</span>
+          <p>
+            Bạn đã có mặt.<br /><strong>Chúc bạn một buổi học thật tốt!</strong>
+          </p>
+        </div>
+        <div class="footer-note">
+          <span aria-hidden="true">ⓘ</span>
+          <p>
+            Mỗi sinh viên điểm danh một lần. Hãy xác nhận trước khi mã QR hết
+            hạn hoặc giảng viên đóng buổi học.
+          </p>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <span>FPT UNIVERSITY / CAMPUS STUDIO</span
+      ><span>Một không gian. Nhiều kết nối.</span>
+    </footer>
+  </body>
 </html>
