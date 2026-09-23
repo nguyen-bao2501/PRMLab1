@@ -15,6 +15,7 @@ import '../services/attendance_store.dart';
 import '../services/google_auth.dart';
 import '../services/desktop_session.dart';
 import 'import_classes_dialog.dart';
+import 'teaching_schedule.dart';
 
 const green = Color(0xFF15966A);
 const line = Color(0xFFE3E5DC);
@@ -157,6 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final AttendanceStore s;
   int page = 0;
   String search = '', filter = 'ALL';
+  String? semesterFilter;
   final email = TextEditingController(text: 'devtest@gmail.com');
   final server = TextEditingController();
   String devRole = 'TEACHER';
@@ -221,7 +223,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (timeInt < 1950) return 'Slot 5';
     return 'Slot 6';
   }
-
 
   void toast(String message) {
     if (mounted) {
@@ -347,7 +348,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: s.student
                                 ? studentPage()
                                 : switch (page) {
-                                    0 => overview(),
+                                    0 => teachingSchedule(true),
+                                    6 => teachingSchedule(false),
                                     1 => classesPage(),
                                     2 => sessionsPage(),
                                     3 => attendancePage(),
@@ -409,219 +411,240 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   width: 480,
                   padding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.sizeOf(context).width < 600 ? 24 : 48,
-                  vertical: 48,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white, // Solid white card
-                  borderRadius: BorderRadius.circular(24), // Slightly smaller radius like the picture
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05), // Very faint shadow
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                brand(),
-                const SizedBox(height: 24),
-                const Text(
-                  'Đăng nhập',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E293B), // Dark navy
+                    horizontal: MediaQuery.sizeOf(context).width < 600
+                        ? 24
+                        : 48,
+                    vertical: 48,
                   ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Để tiếp tục sử dụng ứng dụng điểm danh\nFPT University',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF64748B), // Gray
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (s.error != null) ...[
-                  errorBanner(),
-                  const SizedBox(height: 16),
-                ],
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF4285F4), // Google Blue
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Solid white card
+                    borderRadius: BorderRadius.circular(
+                      24,
+                    ), // Slightly smaller radius like the picture
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(
+                          0.05,
+                        ), // Very faint shadow
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: s.busy
-                        ? null
-                        : () => action(() async {
-                            await s.authenticate(
-                              () async => s.api.googleLogin(
-                                await (widget.googleSignIn ??
-                                    GoogleAuth.signIn)(),
-                              ),
-                            );
-                          }),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (s.busy)
-                          const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Image.network(
-                              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png',
-                              width: 20,
-                              height: 20,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 20),
-                            ),
-                          ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            s.busy ? 'Đang đăng nhập…' : 'Đăng nhập bằng Google',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: Colors.black12)),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'FPT UNIVERSITY',
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const Expanded(child: Divider(color: Colors.black12)),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.verified_user_outlined,
-                      size: 18,
-                      color: Color(0xFF64748B),
-                    ),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Bảo mật bởi Google Workspace',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-
-                if (const bool.fromEnvironment('ENABLE_DEV_LOGIN')) ...[
-                  const SizedBox(height: 32),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Cấu hình kết nối & Developer',
-                      style: TextStyle(fontSize: 13, color: muted),
-                    ),
-                    children: [
-
-                      TextField(
-                        controller: email,
-                        decoration: const InputDecoration(
-                          labelText: 'Email kiểm thử',
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: devRole,
-                        decoration: const InputDecoration(labelText: 'Vai trò'),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'TEACHER',
-                            child: Text('Giảng viên'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'STUDENT',
-                            child: Text('Sinh viên'),
-                          ),
-                        ],
-                        onChanged: (v) => setState(() => devRole = v!),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: button(
-                          'Đăng nhập thử nghiệm',
-                          Icons.code,
-                          () => action(() async {
-                            if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                                .hasMatch(email.text.trim())) {
-                              throw const ApiException(
-                                'Vui lòng nhập email hợp lệ.',
-                              );
-                            }
-                            await s.authenticate(
-                              () => s.api.devLogin(email.text.trim(), devRole),
-                            );
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                     ],
                   ),
-                ],
-              ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      brand(),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Đăng nhập',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E293B), // Dark navy
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Để tiếp tục sử dụng ứng dụng điểm danh\nFPT University',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B), // Gray
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      if (s.error != null) ...[
+                        errorBanner(),
+                        const SizedBox(height: 16),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFF4285F4,
+                            ), // Google Blue
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: s.busy
+                              ? null
+                              : () => action(() async {
+                                  await s.authenticate(
+                                    () async => s.api.googleLogin(
+                                      await (widget.googleSignIn ??
+                                          GoogleAuth.signIn)(),
+                                    ),
+                                  );
+                                }),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (s.busy)
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              else
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Image.network(
+                                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/48px-Google_%22G%22_logo.svg.png',
+                                    width: 20,
+                                    height: 20,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.g_mobiledata,
+                                              color: Color(0xFF4285F4),
+                                              size: 20,
+                                            ),
+                                  ),
+                                ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Text(
+                                  s.busy
+                                      ? 'Đang đăng nhập…'
+                                      : 'Đăng nhập bằng Google',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider(color: Colors.black12)),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'FPT UNIVERSITY',
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          const Expanded(child: Divider(color: Colors.black12)),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.verified_user_outlined,
+                            size: 18,
+                            color: Color(0xFF64748B),
+                          ),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Bảo mật bởi Google Workspace',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (const bool.fromEnvironment('ENABLE_DEV_LOGIN')) ...[
+                        const SizedBox(height: 32),
+                        ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Cấu hình kết nối & Developer',
+                            style: TextStyle(fontSize: 13, color: muted),
+                          ),
+                          children: [
+                            TextField(
+                              controller: email,
+                              decoration: const InputDecoration(
+                                labelText: 'Email kiểm thử',
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              initialValue: devRole,
+                              decoration: const InputDecoration(
+                                labelText: 'Vai trò',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'TEACHER',
+                                  child: Text('Giảng viên'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'STUDENT',
+                                  child: Text('Sinh viên'),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() => devRole = v!),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: button(
+                                'Đăng nhập thử nghiệm',
+                                Icons.code,
+                                () => action(() async {
+                                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                      .hasMatch(email.text.trim())) {
+                                    throw const ApiException(
+                                      'Vui lòng nhập email hợp lệ.',
+                                    );
+                                  }
+                                  await s.authenticate(
+                                    () => s.api.devLogin(
+                                      email.text.trim(),
+                                      devRole,
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
       ),
     ),
-  ),
-),
-),
-);
-
+  );
 
   Widget sidebar(bool wide) => Container(
     width: wide ? 242 : 76,
@@ -658,8 +681,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         if (!s.student) ...[
           nav(0, 'Tổng quan', Icons.grid_view_rounded, wide),
+          nav(6, 'Lịch dạy', Icons.calendar_month_outlined, wide),
+          nav(2, 'Tiết học', Icons.event_note_outlined, wide),
           nav(1, 'Lớp học của tôi', Icons.school_outlined, wide),
-          nav(2, 'Buổi học', Icons.calendar_month_outlined, wide),
           nav(3, 'Điểm danh', Icons.qr_code_scanner_rounded, wide),
           nav(4, 'Báo cáo', Icons.bar_chart_rounded, wide),
         ] else
@@ -817,7 +841,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Text(
             s.student
                 ? 'CAMPUS / SINH VIÊN'
-                : 'CAMPUS / ${['TỔNG QUAN', 'LỚP HỌC', 'BUỔI HỌC', 'ĐIỂM DANH', 'BÁO CÁO', 'TÀI KHOẢN'][page]}',
+                : 'CAMPUS / ${['TỔNG QUAN', 'LỚP HỌC', 'BUỔI HỌC', 'ĐIỂM DANH', 'BÁO CÁO', 'TÀI KHOẢN', 'LỊCH DẠY'][page]}',
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: ink,
@@ -1099,9 +1123,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget classesPage() {
     final list = s.classes
         .where(
-          (c) => '${c['classCode']} ${c['subjectCode']} ${c['semester']}'
-              .toLowerCase()
-              .contains(search.toLowerCase()),
+          (c) =>
+              (semesterFilter == null || c['semester'] == semesterFilter) &&
+              '${c['classCode']} ${c['subjectCode']} ${c['semester']}'
+                  .toLowerCase()
+                  .contains(search.toLowerCase()),
         )
         .toList();
     return Column(
@@ -1124,6 +1150,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             searchBox('Tìm mã lớp, mã môn, học kỳ…'),
+            DropdownButton<String>(
+              value: semesterFilter,
+              hint: const Text('Tất cả học kỳ'),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('Tất cả học kỳ'),
+                ),
+                ...s.classes
+                    .map((c) => c['semester']?.toString())
+                    .whereType<String>()
+                    .toSet()
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t))),
+              ],
+              onChanged: (v) => setState(() => semesterFilter = v),
+            ),
             button(
               'Nhập tất cả lớp từ Sheet',
               Icons.library_add_outlined,
@@ -1261,7 +1303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     minWidth: 285,
   );
   Widget searchBox(String hint) => SizedBox(
-    width: 430,
+    width: MediaQuery.sizeOf(context).width < 700 ? 260 : 430,
     child: TextField(
       key: ValueKey('search-$page'),
       onChanged: (value) => setState(() => search = value),
@@ -1322,8 +1364,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList(),
     onChanged: s.busy
         ? null
-        : (id) => action(
-            () => s.selectSession(s.sessions.firstWhere((x) => x['id'] == id)),
+        : (id) => openLesson(
+            s.selectedClass!,
+            s.sessions.firstWhere((x) => x['id'] == id),
           ),
   );
   Widget selectors() => panel(
@@ -1351,12 +1394,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     children: [
       heading(
         '03 / LỊCH BUỔI HỌC',
-        'Buổi học',
-        'Chọn lớp học để quản lý các phiên điểm danh.',
+        'Tiết học',
+        'Chọn lớp để xem thống kê, xếp lịch và chi tiết từng tiết.',
         trailing: button(
-          'Bắt đầu điểm danh (Slot hiện tại)',
+          'Xếp lịch tiết học',
           Icons.add,
-          s.selectedClass == null ? null : createSession,
+          s.selectedClass == null ? null : scheduleLesson,
           primary: true,
         ),
       ),
@@ -1372,6 +1415,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       const SizedBox(height: 24),
       if (s.selectedClass != null) ...[
+        ClassAttendanceSummary(
+          key: ValueKey(
+            '${s.selectedClass!['id']}-${s.lastSync}-${s.sessions.map((x) => x['status']).join()}',
+          ),
+          store: s,
+        ),
+        const SizedBox(height: 16),
         panel(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1425,12 +1475,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         panel(
           empty(
             'Chưa có buổi học',
-            'Bắt đầu điểm danh để nhận mã QR.',
+            'Xếp lịch theo ngày, slot và phòng trước khi điểm danh.',
             Icons.event_available_outlined,
             action: button(
-              'Bắt đầu điểm danh (Slot hiện tại)',
+              'Xếp lịch tiết học',
               Icons.add,
-              createSession,
+              scheduleLesson,
               primary: true,
             ),
           ),
@@ -1484,15 +1534,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         trailing: badge(
-                          x['status'] == 'OPEN' ? 'Đang mở' : 'Đã đóng',
+                          lessonStatus(x),
                           color: x['status'] == 'OPEN' ? green : muted,
                         ),
                         onTap: s.busy
                             ? null
-                            : () => action(() async {
-                                await s.selectSession(x);
-                                if (mounted) setState(() => page = 3);
-                              }),
+                            : () => openLesson(s.selectedClass!, x),
                       ),
                     ),
                   ),
@@ -1510,9 +1557,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Điểm danh lớp học',
         'Một mã QR. Cả lớp kết nối. Kết quả cập nhật mỗi 5 giây.',
         trailing: button(
-          'Bắt đầu điểm danh (Slot hiện tại)',
+          'Xếp lịch tiết học',
           Icons.add,
-          s.selectedClass == null ? null : createSession,
+          s.selectedClass == null ? null : scheduleLesson,
           primary: true,
         ),
       ),
@@ -1543,9 +1590,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             green,
           ),
           stat(
-            s.open ? 'Chưa điểm danh' : 'Không có mặt',
-            '${s.remaining}',
-            s.open ? 'Đang chờ sinh viên' : 'Theo kết quả buổi học',
+            s.selectedSession?['status'] == 'CLOSED'
+                ? 'Vắng'
+                : 'Chưa điểm danh',
+            '${s.selectedSession?['status'] == 'CLOSED' ? s.attendances.where((x) => x['status'] == 'ABSENT').length : s.remaining}',
+            s.selectedSession?['status'] == 'CLOSED'
+                ? 'Theo kết quả buổi học'
+                : 'Chưa chốt kết quả',
             Icons.schedule,
             fptOrange,
           ),
@@ -1663,7 +1714,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             subtitle('Buổi #${s.selectedSession!['id']}'),
             const Spacer(),
             badge(
-              s.open ? 'Đang mở' : 'Đã đóng',
+              lessonStatus(s.selectedSession ?? {}),
               color: s.open ? green : muted,
             ),
           ],
@@ -1708,7 +1759,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Icon(Icons.access_time, color: muted, size: 18),
             const SizedBox(width: 8),
-            Expanded(child: Text('Lúc ${date(s.selectedSession?['startTime'], time: true)}')),
+            Expanded(
+              child: Text(
+                'Lúc ${date(s.selectedSession?['startTime'], time: true)}',
+              ),
+            ),
             Text(
               date(s.selectedSession?['startTime'], time: true),
               style: const TextStyle(color: muted, fontSize: 12),
@@ -2141,7 +2196,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-
     ],
   );
   Widget studentPage() => Column(
@@ -2187,15 +2241,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     .map(
                       (field) => Padding(
                         padding: const EdgeInsets.only(top: 15),
-                        child: TextFormField(
-                          controller: controllers[field.key],
-                          decoration: InputDecoration(labelText: field.value),
-                          validator: (v) =>
-                              !optional.contains(field.key) &&
-                                  (v == null || v.trim().isEmpty)
-                              ? 'Vui lòng nhập ${field.value.toLowerCase()}'
-                              : null,
-                        ),
+                        child: field.key == 'semester'
+                            ? DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  labelText: 'Chọn học kỳ',
+                                ),
+                                items:
+                                    {
+                                          ...s.classes
+                                              .map(
+                                                (c) =>
+                                                    c['semester']?.toString(),
+                                              )
+                                              .whereType<String>(),
+                                          for (
+                                            var year = DateTime.now().year - 1;
+                                            year <= DateTime.now().year + 1;
+                                            year++
+                                          )
+                                            for (final term in [
+                                              'SP',
+                                              'SU',
+                                              'FA',
+                                            ])
+                                              '$term$year',
+                                        }
+                                        .map(
+                                          (t) => DropdownMenuItem(
+                                            value: t,
+                                            child: Text(t),
+                                          ),
+                                        )
+                                        .toList(),
+                                onChanged: (v) =>
+                                    controllers[field.key]!.text = v ?? '',
+                                validator: (v) =>
+                                    v == null ? 'Vui lòng chọn học kỳ' : null,
+                              )
+                            : TextFormField(
+                                controller: controllers[field.key],
+                                decoration: InputDecoration(
+                                  labelText: field.value,
+                                ),
+                                validator: (v) =>
+                                    !optional.contains(field.key) &&
+                                        (v == null || v.trim().isEmpty)
+                                    ? 'Vui lòng nhập ${field.value.toLowerCase()}'
+                                    : null,
+                              ),
                       ),
                     )
                     .toList(),
@@ -2249,16 +2342,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ) ??
       false;
   Future<void> createClass() async {
-    final data = await form(
-      'Tạo lớp học mới',
-      {
-        'classCode': 'Mã lớp',
-        'subjectCode': 'Mã môn học',
-        'semester': 'Học kỳ',
-      },
-      submit: 'Tạo lớp',
-      optional: {'semester'},
-    );
+    final data = await form('Tạo lớp học mới', {
+      'classCode': 'Mã lớp',
+      'subjectCode': 'Mã môn học',
+      'semester': 'Học kỳ',
+    }, submit: 'Tạo lớp');
     if (data == null || !mounted) return;
     await action(() async {
       final item = await s.api.createClass(data);
@@ -2266,6 +2354,187 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await s.selectClass(item);
       if (mounted) setState(() => page = 2);
     }, 'Đã tạo lớp học.');
+  }
+
+  Widget teachingSchedule(bool overview) => TeachingSchedule(
+    store: s,
+    overview: overview,
+    onLesson: openLesson,
+    onCreateClass: createClass,
+    onSchedule: scheduleLesson,
+  );
+
+  Future<void> openLesson(Json classroom, Json lesson) async {
+    if (lesson['status'] == 'SCHEDULED') {
+      final start = lessonStart(lesson);
+      final ready = canOpenLesson(lesson, DateTime.now());
+      final openNow = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            '${classroom['classCode']} · ${classroom['subjectCode']}',
+          ),
+          content: Text(
+            'Phòng ${lesson['room']}\n${start == null ? '—' : lessonDate(start)} · Slot ${lessonSlot(lesson) + 1}\n'
+            '${classroom['studentCount'] ?? 0} sinh viên\nChưa mở điểm danh, chưa ghi nhận vắng.\n'
+            'Chỉ mở điểm danh từ giờ bắt đầu đến hết slot (135 phút).',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Đóng'),
+            ),
+            FilledButton(
+              onPressed: ready ? () => Navigator.pop(ctx, true) : null,
+              child: const Text('Mở điểm danh'),
+            ),
+          ],
+        ),
+      );
+      if (openNow != true || !mounted) return;
+      await action(() async {
+        await s.selectClass(classroom);
+        final opened = await s.api.openSession(lesson['id'] as int);
+        await s.selectSession(opened);
+        if (mounted) setState(() => page = 3);
+      });
+    } else {
+      await action(() async {
+        await s.selectClass(classroom);
+        await s.selectSession(lesson);
+        if (mounted) setState(() => page = 3);
+      });
+    }
+  }
+
+  Future<void> scheduleLesson() async {
+    if (s.classes.isEmpty) {
+      await createClass();
+      return;
+    }
+    var classId =
+        s.selectedClass?['id'] as int? ?? s.classes.first['id'] as int;
+    var day = DateTime.now().add(const Duration(days: 1));
+    var slot = 0;
+    final room = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, update) => AlertDialog(
+          title: const Text('Xếp lịch tiết học'),
+          content: SizedBox(
+            width: 420,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<int>(
+                      initialValue: classId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Lớp / học kỳ',
+                      ),
+                      items: s.classes
+                          .map(
+                            (c) => DropdownMenuItem<int>(
+                              value: c['id'] as int,
+                              child: Text(
+                                '${c['classCode']} · ${c['subjectCode']} · ${c['semester'] ?? 'Chưa có kỳ'}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => update(() => classId = v!),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Ngày: ${lessonDate(day)}'),
+                      trailing: const Icon(Icons.date_range),
+                      onTap: () async {
+                        final chosen = await showDatePicker(
+                          context: ctx,
+                          initialDate: day,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 1),
+                          ),
+                          lastDate: DateTime(2100),
+                        );
+                        if (chosen != null && ctx.mounted)
+                          update(() => day = chosen);
+                      },
+                    ),
+                    DropdownButtonFormField<int>(
+                      initialValue: slot,
+                      decoration: const InputDecoration(labelText: 'Slot'),
+                      items: List.generate(
+                        slotStarts.length,
+                        (i) => DropdownMenuItem(
+                          value: i,
+                          child: Text(
+                            'Slot ${i + 1} · ${slotStarts[i].$1}:${slotStarts[i].$2.toString().padLeft(2, '0')}',
+                          ),
+                        ),
+                      ),
+                      onChanged: (v) => update(() => slot = v!),
+                    ),
+                    TextFormField(
+                      controller: room,
+                      decoration: const InputDecoration(
+                        labelText: 'Phòng học (ví dụ NVH 604)',
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? 'Nhập phòng học'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Lưu lịch chưa tạo mã QR. Đến giờ học, bấm tiết trên lịch để mở điểm danh.',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+              },
+              child: const Text('Lưu lịch'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final roomName = room.text.trim();
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    room.dispose();
+    if (accepted != true || !mounted) return;
+    final start = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      slotStarts[slot].$1,
+      slotStarts[slot].$2,
+    );
+    if (!start.isAfter(DateTime.now())) {
+      toast('Chọn một slot chưa bắt đầu.');
+      return;
+    }
+    await action(() async {
+      await s.api.scheduleSession(classId, roomName, start);
+      await s.reload();
+      await s.selectClass(s.classes.firstWhere((c) => c['id'] == classId));
+      if (mounted) setState(() => page = 2);
+    }, 'Đã xếp lịch tiết học.');
   }
 
   Future<void> createSession() async {

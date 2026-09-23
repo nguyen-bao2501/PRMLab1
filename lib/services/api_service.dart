@@ -114,6 +114,27 @@ class ApiService {
   ) as Json;
   Future<Json> session(int id) async =>
       await request('GET', '/sessions/$id') as Json;
+  Future<Json> scheduleSession(
+    int classId,
+    String room,
+    DateTime start,
+  ) async => await request(
+    'POST',
+    '/sessions/schedule',
+    body: {
+      'classId': classId,
+      'room': room,
+      'startTime': start.toUtc().toIso8601String(),
+    },
+  ) as Json;
+  Future<Json> importSchedule(String semester, List<Json> lessons) async =>
+      await request(
+        'POST',
+        '/sessions/import-schedule',
+        body: {'semester': semester, 'lessons': lessons},
+      ) as Json;
+  Future<Json> openSession(int id) async =>
+      await request('POST', '/sessions/$id/open') as Json;
   Future<Json> refreshQr(int id) async =>
       await request('POST', '/sessions/$id/refresh-qr') as Json;
   Future<Json> closeSession(int id) async =>

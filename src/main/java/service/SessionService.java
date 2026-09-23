@@ -46,6 +46,44 @@ public class SessionService {
     private final QrTokenService qrTokenService;
 
     @Transactional
+    public SessionResponse schedule(CreateSessionRequest req, User teacher) {
+        ClassRoom cls = classRepository.findById(req.getClassId())
+                .orElseThrow(() -> new ApiException(ErrorCode.CLASS_NOT_FOUND));
+        if (!cls.getTeacher().getId().equals(teacher.getId()))
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        if (req.getStartTime() == null || !req.getStartTime().isAfter(Instant.now())
+                || req.getRoom() == null || req.getRoom().isBlank())
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        if (sessionRepository.existsByClassRoomTeacherIdAndStatusNotAndStartTimeGreaterThanAndStartTimeLessThan(
+                teacher.getId(), Session.Status.CANCELLED,
+                req.getStartTime().minusSeconds(135 * 60), req.getStartTime().plusSeconds(135 * 60)))
+            throw new ApiException(ErrorCode.SCHEDULE_CONFLICT);
+        Session s = Session.builder().classRoom(cls)
+                .sessionDate(req.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate())
+                .startTime(req.getStartTime()).room(req.getRoom().trim())
+                .status(Session.Status.SCHEDULED).build();
+        sessionRepository.save(s);
+        cls.setTotalSessions(cls.getTotalSessions() + 1);
+        return toResponse(s, null, true);
+    }
+
+    @Transactional
+    public SessionResponse open(Long id, User teacher) {
+        Session s = sessionRepository.findForOpening(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
+        assertOwner(s, teacher);
+        if (s.getStatus() != Session.Status.SCHEDULED)
+            throw new ApiException(ErrorCode.SESSION_CLOSED);
+        Instant now = Instant.now();
+        // A scheduled slot lasts 135 minutes; attendance opens at its start.
+        if (now.isBefore(s.getStartTime()) || !now.isBefore(s.getStartTime().plusSeconds(135 * 60)))
+            throw new ApiException(ErrorCode.ATTENDANCE_WINDOW);
+        s.setStatus(Session.Status.OPEN);
+        s.setQrExpiresAt(now.plusSeconds(qrTokenService.getTtlSeconds()));
+        return toResponse(s, qrTokenService.generateForSession(s.getId()), true);
+    }
+
+    @Transactional
     public SessionResponse create(CreateSessionRequest req, User teacher) {
         ClassRoom cls = classRepository.findById(req.getClassId())
                 .orElseThrow(() -> new ApiException(ErrorCode.CLASS_NOT_FOUND));
@@ -170,7 +208,8 @@ public class SessionService {
 
         if (includeStats) {
             b.totalStudents(enrollmentRepository.countByClassRoomId(s.getClassRoom().getId()));
-            b.checkedIn(attendanceRepository.countBySessionId(s.getId()));
+            b.checkedIn(attendanceRepository.countBySessionIdAndStatus(s.getId(), entity.Attendance.Status.PRESENT)
+                    + attendanceRepository.countBySessionIdAndStatus(s.getId(), entity.Attendance.Status.LATE));
         }
         return b.build();
     }

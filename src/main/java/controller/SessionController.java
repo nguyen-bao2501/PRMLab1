@@ -22,6 +22,27 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final service.ScheduleImportService scheduleImportService;
+
+    @PostMapping("/import-schedule")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<java.util.Map<String,Integer>> importSchedule(
+            @Valid @RequestBody dto.request.ImportScheduleRequest request, @CurrentUser User teacher) {
+        return ApiResponse.ok(scheduleImportService.importSchedule(request, teacher));
+    }
+
+    @PostMapping("/schedule")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<SessionResponse> schedule(@Valid @RequestBody CreateSessionRequest req,
+                                                @CurrentUser User teacher) {
+        return ApiResponse.ok(sessionService.schedule(req, teacher));
+    }
+
+    @PostMapping("/{id}/open")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<SessionResponse> open(@PathVariable Long id, @CurrentUser User teacher) {
+        return ApiResponse.ok(sessionService.open(id, teacher));
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")

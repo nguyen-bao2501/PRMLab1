@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
+    SCHEDULE_CONFLICT("SCHEDULE_CONFLICT", "Giảng viên đã có tiết học trùng thời gian này", HttpStatus.CONFLICT),
+    ATTENDANCE_WINDOW("ATTENDANCE_WINDOW", "Chỉ mở điểm danh trong thời gian tiết học (135 phút từ giờ bắt đầu)", HttpStatus.BAD_REQUEST),
     CLASS_NOT_FOUND("CLASS_NOT_FOUND", "Không tìm thấy lớp", HttpStatus.NOT_FOUND),
     SESSION_NOT_FOUND("SESSION_NOT_FOUND", "Không tìm thấy buổi điểm danh", HttpStatus.NOT_FOUND),
     SESSION_CLOSED("SESSION_CLOSED", "Buổi điểm danh đã kết thúc", HttpStatus.BAD_REQUEST),

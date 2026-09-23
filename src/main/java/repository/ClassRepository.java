@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface ClassRepository extends JpaRepository<ClassRoom, Long> {
     List<ClassRoom> findByTeacherIdOrderByCreatedAtDesc(Long teacherId);
+    boolean existsByClassCodeAndSubjectCodeAndSemesterAndTeacherId(String classCode, String subjectCode, String semester, Long teacherId);
     boolean existsByClassCodeAndTeacherId(String classCode, Long teacherId);
 }

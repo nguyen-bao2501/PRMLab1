@@ -27,7 +27,7 @@ public class ClassService {
 
     @Transactional
     public ClassResponse create(CreateClassRequest req, User teacher) {
-        if (classRepository.existsByClassCodeAndTeacherId(req.getClassCode(), teacher.getId())) {
+        if (classRepository.existsByClassCodeAndSubjectCodeAndSemesterAndTeacherId(req.getClassCode(), req.getSubjectCode(), req.getSemester(), teacher.getId())) {
             throw new ApiException(ErrorCode.CLASS_CODE_EXISTS);
         }
         ClassRoom cls = ClassRoom.builder()

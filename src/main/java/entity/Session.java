@@ -44,5 +44,5 @@ public class Session {
         if (status == null) status = Status.OPEN;
     }
 
-    public enum Status { OPEN, CLOSED, CANCELLED }
+    public enum Status { SCHEDULED, OPEN, CLOSED, CANCELLED }
 }

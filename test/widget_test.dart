@@ -14,7 +14,37 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 AttendanceStore fixture() {
-  final store = AttendanceStore(ApiService(), autoPoll: false);
+  late AttendanceStore store;
+  store = AttendanceStore(
+    ApiService(
+      client: MockClient((request) async {
+        final path = request.url.path;
+        final Object data;
+        if (path == '/v1/classes') {
+          data = store.classes;
+        } else if (path == '/v1/sessions') {
+          data = store.sessions
+              .where(
+                (x) =>
+                    '${x['classId']}' == request.url.queryParameters['classId'],
+              )
+              .toList();
+        } else if (path == '/v1/attendances') {
+          data = store.attendances;
+        } else if (path.startsWith('/v1/classes/')) {
+          data = store.selectedClass ?? store.classes.first;
+        } else {
+          data = store.selectedSession ?? {};
+        }
+        return http.Response(
+          jsonEncode({'success': true, 'data': data}),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    ),
+    autoPoll: false,
+  );
   store.user = {
     'fullName': 'Nguyễn Minh Anh',
     'email': 'anh@fpt.edu.vn',
@@ -135,8 +165,9 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'Overview at $width');
       await screenshot(tester, key, 'studio-overview-${width.round()}');
       final pages = {
+        'Lịch dạy': 'schedule',
         'Lớp học của tôi': 'classes',
-        'Buổi học': 'sessions',
+        'Tiết học': 'sessions',
         'Điểm danh': 'attendance',
         'Báo cáo': 'reports',
         'Tài khoản & kết nối': 'account',
@@ -243,7 +274,7 @@ void main() {
       '/v1/classes',
     ]);
     expect(requests[1].headers['Authorization'], 'Bearer google-jwt');
-    expect(find.text('Một ngày dạy học hiệu quả'), findsOneWidget);
+    expect(find.text('Tổng quan giảng dạy'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
@@ -311,7 +342,7 @@ void main() {
       expect(tester.takeException(), isNull);
       for (final tooltip in [
         'Lớp học của tôi',
-        'Buổi học',
+        'Tiết học',
         'Điểm danh',
         'Báo cáo',
         'Tài khoản & kết nối',
@@ -323,4 +354,41 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets('Scheduled lesson detail cannot open QR before its start', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final store = fixture();
+    addTearDown(store.dispose);
+    store.sessions = [
+      {
+        ...store.sessions.first,
+        'status': 'SCHEDULED',
+        'startTime': DateTime.now()
+            .add(const Duration(days: 1))
+            .toIso8601String(),
+      },
+    ];
+    store.selectedSession = null;
+    await tester.pumpWidget(AttendanceApp(store: store));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiết học').first);
+    await tester.pumpAndSettle();
+    final tile = find.textContaining('Buổi #8');
+    await tester.ensureVisible(tile);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    final open = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Mở điểm danh'),
+    );
+    expect(open.onPressed, isNull);
+    expect(
+      find.textContaining('Chưa mở điểm danh, chưa ghi nhận vắng.'),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
 }

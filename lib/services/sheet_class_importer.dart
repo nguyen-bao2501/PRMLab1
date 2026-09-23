@@ -75,6 +75,11 @@ class SheetClassImporter {
           final sameCode = classes
               .where((c) => c['classCode'] == name)
               .toList();
+          if (sameCode.length > 1) {
+            throw const ApiException(
+              'Có nhiều lớp cùng mã ở các môn/học kỳ. Chọn đúng lớp và nhập Sheet từ chi tiết lớp.',
+            );
+          }
           if (sameCode.isNotEmpty) {
             final existing = sameCode.single;
             if (existing['subjectCode'] != subject ||

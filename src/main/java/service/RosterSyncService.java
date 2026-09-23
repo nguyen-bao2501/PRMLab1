@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -111,6 +112,7 @@ public class RosterSyncService {
                         .email(row.getEmail())
                         .fullName(row.getFullName())
                         .studentCode(row.getRollNumber())
+                        .googleId("pending_" + UUID.randomUUID().toString())
                         .role(User.Role.STUDENT)
                         .isActive(true)
                         .build());

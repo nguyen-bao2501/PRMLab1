@@ -55,12 +55,14 @@ public class AuthService {
                 throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT,
                         "Email của tài khoản Google không khớp với tài khoản đã liên kết");
             }
-            if (u.getGoogleId() != null && !googleId.equals(u.getGoogleId())) {
+            if (u.getGoogleId() != null && !u.getGoogleId().startsWith("pending_") && !googleId.equals(u.getGoogleId())) {
                 throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT,
                         "Email này đã liên kết với một tài khoản Google khác");
             }
-            // Cập nhật googleId + avatar nếu chưa có
-            if (u.getGoogleId() == null) u.setGoogleId(googleId);
+            // Cập nhật googleId + avatar nếu chưa có (hoặc đang dùng ID tạm)
+            if (u.getGoogleId() == null || u.getGoogleId().startsWith("pending_")) {
+                u.setGoogleId(googleId);
+            }
             if (picture != null) u.setAvatarUrl(picture);
             if (name != null) u.setFullName(name);
             return userRepository.save(u);
