@@ -5,8 +5,8 @@ import 'services/attendance_store.dart';
 
 void main() => runApp(const AttendanceApp());
 const fptOrange = Color(0xFFF37021);
-const ink = Color(0xFF173D35);
-const muted = Color(0xFF6E7C73);
+const ink = Color(0xFF3A504E);
+const muted = Color(0xFF8B9D9B);
 
 class AttendanceApp extends StatelessWidget {
   const AttendanceApp({super.key, this.store, this.googleSignIn});
@@ -19,11 +19,11 @@ class AttendanceApp extends StatelessWidget {
     theme: ThemeData(
       useMaterial3: true,
       fontFamily: 'Segoe UI',
-      scaffoldBackgroundColor: const Color(0xFFF5F4EC),
+      scaffoldBackgroundColor: const Color(0xFFE8F0ED),
       colorScheme: ColorScheme.fromSeed(
         seedColor: ink,
         primary: ink,
-        secondary: const Color(0xFFC45425),
+        secondary: const Color(0xFFD69E2E),
         surface: Colors.white,
       ),
       dialogTheme: DialogThemeData(

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-const studioInk = Color(0xFF173D35);
-const studioLime = Color(0xFFDCEAA5);
-const studioPaper = Color(0xFFF5F4EC);
+const studioInk = Color(0xFF3A504E);
+const studioLime = Color(0xFFD69E2E);
+const studioPaper = Color(0xFFE8F0ED);
 
 class StudioHero extends StatelessWidget {
   const StudioHero({super.key, required this.onOpen, required this.onImport});

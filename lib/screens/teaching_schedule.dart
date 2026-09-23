@@ -147,7 +147,7 @@ class _TeachingScheduleState extends State<TeachingSchedule> {
       height: 48,
       decoration: BoxDecoration(
         gradient: primary && onPressed != null
-            ? const LinearGradient(colors: [Color(0xFFF97316), Color(0xFFEA580C)])
+            ? const LinearGradient(colors: [Color(0xFFD69E2E), Color(0xFFC78C26)])
             : null,
         color: primary ? (onPressed == null ? const Color(0xFFF1F5F9) : null) : Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -240,14 +240,14 @@ class _TeachingScheduleState extends State<TeachingSchedule> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+              colors: [Color(0xFF435A58), Color(0xFF2C3E3D)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x330F172A),
+                color: Color(0x332C3E3D),
                 blurRadius: 20,
                 offset: Offset(0, 10),
               )
@@ -294,90 +294,98 @@ class _TeachingScheduleState extends State<TeachingSchedule> {
           ),
         ),
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _buildActionButton(
-              icon: Icons.add_circle,
-              label: 'Tạo lớp học',
-              onPressed: widget.store.busy ? null : widget.onCreateClass,
-              primary: true,
-            ),
-            _buildActionButton(
-              icon: Icons.event_available,
-              label: 'Xếp lịch tiết học',
-              onPressed: widget.store.busy || widget.store.classes.isEmpty ? null : widget.onSchedule,
-            ),
-            _buildActionButton(
-              icon: Icons.document_scanner_outlined,
-              label: 'Đọc lịch từ ảnh',
-              onPressed: loading || widget.store.busy
-                  ? null
-                  : () async {
-                      final imported = await showDialog<DateTime>(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) =>
-                            ImportScheduleImageDialog(api: widget.store.api),
-                      );
-                      if (imported != null && mounted) {
-                        setState(() {
-                          week = imported;
-                          semester = null;
-                        });
-                        await load();
-                      }
-                    },
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 10, offset: Offset(0, 4))],
+          ),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildActionButton(
+                icon: Icons.add_circle,
+                label: 'Tạo lớp học',
+                onPressed: widget.store.busy ? null : widget.onCreateClass,
+                primary: true,
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: terms.contains(semester) ? semester : null,
-                  hint: const Text('Tất cả học kỳ', style: TextStyle(fontSize: 14)),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
-                  items: [
-                    const DropdownMenuItem<String>(value: null, child: Text('Tất cả học kỳ')),
-                    ...terms.map((t) => DropdownMenuItem(value: t, child: Text(t))),
-                  ],
-                  onChanged: (v) => setState(() => semester = v),
+              _buildActionButton(
+                icon: Icons.event_available,
+                label: 'Xếp lịch tiết học',
+                onPressed: widget.store.busy || widget.store.classes.isEmpty ? null : widget.onSchedule,
+              ),
+              _buildActionButton(
+                icon: Icons.document_scanner_outlined,
+                label: 'Đọc lịch từ ảnh',
+                onPressed: loading || widget.store.busy
+                    ? null
+                    : () async {
+                        final imported = await showDialog<DateTime>(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) =>
+                              ImportScheduleImageDialog(api: widget.store.api),
+                        );
+                        if (imported != null && mounted) {
+                          setState(() {
+                            week = imported;
+                            semester = null;
+                          });
+                          await load();
+                        }
+                      },
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: terms.contains(semester) ? semester : null,
+                    hint: const Text('Tất cả học kỳ', style: TextStyle(fontSize: 14)),
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('Tất cả học kỳ')),
+                      ...terms.map((t) => DropdownMenuItem(value: t, child: Text(t))),
+                    ],
+                    onChanged: (v) => setState(() => semester = v),
+                  ),
                 ),
               ),
-            ),
-            _buildActionButton(
-              icon: Icons.sync,
-              label: 'Đồng bộ',
-              onPressed: loading ? null : load,
-            ),
-            Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+              _buildActionButton(
+                icon: Icons.sync,
+                label: 'Đồng bộ',
+                onPressed: loading ? null : load,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Switch(
-                    value: autoSync,
-                    activeColor: const Color(0xFF10B981),
-                    onChanged: (v) => setState(() => autoSync = v),
-                  ),
-                  const Text('Tự đồng bộ 30s', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF475569))),
-                ],
+              Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      value: autoSync,
+                      activeColor: const Color(0xFF10B981),
+                      onChanged: (v) => setState(() => autoSync = v),
+                    ),
+                    const Text('Tự đồng bộ 30s', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF475569))),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         if (loading) const LinearProgressIndicator(),
         if (error != null)
@@ -389,9 +397,11 @@ class _TeachingScheduleState extends State<TeachingSchedule> {
         if (widget.overview) ...[
           LayoutBuilder(
             builder: (context, constraints) {
-              int crossAxisCount = (constraints.maxWidth / 300).floor();
+              double safeWidth = constraints.maxWidth == double.infinity ? MediaQuery.of(context).size.width - 320 : constraints.maxWidth;
+              if (safeWidth < 300) safeWidth = 300;
+              int crossAxisCount = (safeWidth / 300).floor();
               if (crossAxisCount == 0) crossAxisCount = 1;
-              double itemWidth = (constraints.maxWidth - (crossAxisCount - 1) * 16) / crossAxisCount;
+              double itemWidth = (safeWidth - (crossAxisCount - 1) * 16) / crossAxisCount;
 
               final upcoming = filtered
                   .where(

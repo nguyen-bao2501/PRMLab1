@@ -647,17 +647,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   );
 
   Widget sidebar(bool wide) => Container(
-    width: wide ? 242 : 76,
+    width: wide ? 260 : 80,
     decoration: const BoxDecoration(
       color: ink,
-      border: Border(right: BorderSide(color: line)),
+      borderRadius: BorderRadius.only(
+        topRight: Radius.circular(30),
+        bottomRight: Radius.circular(30),
+      ),
     ),
     child: Column(
       children: [
         Padding(
           padding: EdgeInsets.symmetric(
             vertical: 30,
-            horizontal: wide ? 22 : 10,
+            horizontal: wide ? 10 : 10,
           ),
           child: wide
               ? brand(white: true)
@@ -689,42 +692,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ] else
           nav(0, 'Điểm danh cá nhân', Icons.fact_check_outlined, wide),
         const Spacer(),
-        if (wide && MediaQuery.sizeOf(context).height >= 800)
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Container(
-              padding: const EdgeInsets.all(17),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F2D9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.lightbulb_outline,
-                    color: fptOrange,
-                    size: 22,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Bắt đầu thật đơn giản',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 5),
-                  subtitle('Tạo lớp, nhập danh sách và mở phiên điểm danh.'),
-                ],
-              ),
-            ),
-          ),
         if (!s.student)
           nav(5, 'Tài khoản & kết nối', Icons.settings_outlined, wide),
         Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(20),
           child: Tooltip(
             message: 'Đăng xuất',
             child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               onTap: s.busy
                   ? null
                   : () {
@@ -736,19 +711,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 child: Row(
+                  mainAxisAlignment: wide ? MainAxisAlignment.start : MainAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.logout_rounded,
-                      color: const Color(0xFFADBFB5),
-                      size: 21,
+                      color: Color(0xFFADBFB5),
+                      size: 22,
                     ),
                     if (wide) ...[
                       const SizedBox(width: 12),
                       const Text(
                         'Đăng xuất',
-                        style: TextStyle(color: const Color(0xFFADBFB5)),
+                        style: TextStyle(
+                          color: Color(0xFFADBFB5),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ],
@@ -760,15 +740,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
     ),
   );
+
   Widget nav(int index, String label, IconData icon, bool wide) {
     final active = page == index;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.only(left: 20, top: 4, bottom: 4),
       child: Tooltip(
         message: wide ? '' : label,
         child: Material(
-          color: active ? const Color(0xFFDCEAA5) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: active ? const Color(0xFFE8F0ED) : Colors.transparent,
+          borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
           child: InkWell(
             onTap: () => setState(() {
               if (MediaQuery.sizeOf(context).width < 700) {
@@ -778,9 +759,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               search = '';
               filter = 'ALL';
             }),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
                   Icon(
@@ -789,21 +770,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     size: 22,
                   ),
                   if (wide) ...[
-                    const SizedBox(width: 13),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        label,
+                        label.toUpperCase(),
                         style: TextStyle(
                           color: active ? ink : const Color(0xFFDFE6DE),
-                          fontWeight: active
-                              ? FontWeight.w800
-                              : FontWeight.w600,
-                          fontSize: 13,
+                          fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
-                    if (active)
-                      const Icon(Icons.chevron_right, color: ink, size: 18),
                   ],
                 ],
               ),
@@ -931,45 +909,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String description, {
     Widget? trailing,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: 26),
-    child: LayoutBuilder(
-      builder: (context, c) {
-        final body = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              eyebrow,
-              style: const TextStyle(
-                color: fptOrange,
-                fontSize: 10,
-                letterSpacing: 1.8,
-                fontWeight: FontWeight.w800,
+    padding: const EdgeInsets.only(bottom: 24),
+    child: Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF435A58), Color(0xFF2C3E3D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x332C3E3D),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          )
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, c) {
+          final body = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
               ),
-            ),
-            const SizedBox(height: 8),
-            title(text, size: 32),
-            const SizedBox(height: 6),
-            subtitle(description),
-          ],
-        );
-        return c.maxWidth > 720
-            ? Row(
-                children: [
-                  Expanded(child: body),
-                  ?trailing,
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  body,
-                  if (trailing != null) ...[
-                    const SizedBox(height: 16),
-                    trailing,
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+              ),
+            ],
+          );
+          return c.maxWidth > 720
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: body),
+                    if (trailing != null) trailing,
                   ],
-                ],
-              );
-      },
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    body,
+                    if (trailing != null) ...[
+                      const SizedBox(height: 16),
+                      trailing,
+                    ],
+                  ],
+                );
+        },
+      ),
     ),
   );
   Widget empty(String heading, String text, IconData icon, {Widget? action}) =>
@@ -1192,11 +1185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget classGrid(List<Json> list) => grid(
     list.asMap().entries.map((entry) {
       final c = entry.value;
-      final color = [
-        const Color(0xFFE6EDCD),
-        const Color(0xFFE9E5F4),
-        const Color(0xFFF6E2D0),
-      ][entry.key % 3];
+      final color = const Color(0xFFF4F7FA);
       return panel(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
