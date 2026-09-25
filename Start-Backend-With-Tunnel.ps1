@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 
-$ngrokDomain = "nonpedagogical-crabbedly-winnie.ngrok-free.dev"
+$ngrokDomain = ""
 if (Test-Path 'google-oauth.local.json') {
     try {
         $oauthCfg = Get-Content -Raw -LiteralPath 'google-oauth.local.json' | ConvertFrom-Json
@@ -9,11 +9,16 @@ if (Test-Path 'google-oauth.local.json') {
     } catch {}
 }
 
-Write-Host "Đang khởi động ngrok với domain cố định ($ngrokDomain)..." -ForegroundColor Cyan
+if ($ngrokDomain) {
+    Write-Host "Đang khởi động ngrok với domain cố định ($ngrokDomain)..." -ForegroundColor Cyan
+} else {
+    Write-Host "Đang khởi động ngrok với domain ngẫu nhiên..." -ForegroundColor Cyan
+}
+
 $TunnelJob = Start-Job -ScriptBlock {
     param($domain)
     if ($domain) {
-        ngrok http 8080 --domain=$domain
+        ngrok http 8080 --url=$domain
     } else {
         ngrok http 8080
     }
