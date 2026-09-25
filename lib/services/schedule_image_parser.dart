@@ -63,7 +63,7 @@ class ScheduleImageParser {
     slots.sort((a, b) => a.$2.compareTo(b.$2));
     if (slots.isEmpty)
       throw const FormatException(
-        'Không nhận diện được hàng Slot. Chọn ảnh đầy đủ bảng lịch, rõ chữ.',
+        'Ảnh bị cắt hoặc không có nhãn Slot. Hãy chọn ảnh nguyên màn hình lịch, gồm cả cột Slot bên trái.',
       );
     final datePattern = RegExp(r'^(\d{2})/(\d{2})$');
     final dates =
@@ -78,7 +78,7 @@ class ScheduleImageParser {
           ..sort((a, b) => a.x.compareTo(b.x));
     if (dates.length < 6 || dates.length > 7)
       throw const FormatException(
-        'Cần thấy ngày của ít nhất 6 cột trong lịch tuần. Hãy chọn ảnh đầy đủ phần tiêu đề.',
+        'Ảnh bị cắt phần tiêu đề ngày. Hãy chọn ảnh nguyên màn hình, gồm đủ các ngày ở hàng đầu.',
       );
     final steps = <double>[
       for (var i = 1; i < dates.length; i++) dates[i].x - dates[i - 1].x,
@@ -119,10 +119,12 @@ class ScheduleImageParser {
     }
     final rows = <ScheduleDraft>[];
     final code = RegExp(
-      r'([A-Z]{2})([0-9IO]{4,6})[-–]([A-Z]{2,4})([0-9IO]{3})',
+      r'([A-Z]{2})([0-9IOliL|]{4,6})[-–\s]*([A-Z]{2,4})([0-9IOliL|]{3})',
     );
     String digits(String value) =>
-        value.replaceAll('I', '1').replaceAll('O', '0');
+        value
+            .replaceAll(RegExp(r'[IOliL|]'), '1')
+            .replaceAll(RegExp(r'[OoQ]'), '0');
     for (var r = 0; r < slots.length; r++) {
       final (slot, y) = slots[r];
       if (slot < 1 || slot > 6) continue;
@@ -149,7 +151,7 @@ class ScheduleImageParser {
         final matches = code.allMatches(compact).toList();
         if (matches.length != 1) {
           if (cell.any((w) => RegExp(r'[A-Za-z]{2,}').hasMatch(w.text))) {
-            final room = RegExp(r'AT([A-Z]+)([0-9]{2,4})').firstMatch(compact);
+            final room = RegExp(r'AT([A-Z]+)[-–\s]*([0-9]{2,4})').firstMatch(compact);
             rows.add(
               ScheduleDraft(
                 day: day,
@@ -167,7 +169,7 @@ class ScheduleImageParser {
           continue;
         }
         final match = matches.single;
-        final room = RegExp(r'AT([A-Z]+)([0-9]{2,4})')
+        final room = RegExp(r'AT([A-Z]+)[-–\s]*([0-9]{2,4})')
             .firstMatch(compact.substring(match.end));
         rows.add(
           ScheduleDraft(

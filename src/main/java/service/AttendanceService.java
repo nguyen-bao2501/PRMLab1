@@ -1,21 +1,23 @@
-package  service;
+package service;
 
-import  dto.request.CheckInRequest;
-import  dto.response.AttendanceResponse;
-import  entity.Attendance;
-import  entity.Session;
-import  entity.User;
-import  exception.ApiException;
-import  exception.ErrorCode;
-import  repository.AttendanceRepository;
-import  repository.EnrollmentRepository;
-import  repository.SessionRepository;
+import dto.request.CheckInRequest;
+import dto.request.UpdateAttendanceRequest;
+import dto.response.AttendanceResponse;
+import entity.Attendance;
+import entity.Session;
+import entity.User;
+import exception.ApiException;
+import exception.ErrorCode;
+import repository.AttendanceRepository;
+import repository.EnrollmentRepository;
+import repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -95,6 +97,46 @@ public class AttendanceService {
     public List<AttendanceResponse> listByStudent(User student) {
         return attendanceRepository.findByStudentIdOrderByCheckInTimeDesc(student.getId())
                 .stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AttendanceResponse updateAttendance(Long id, UpdateAttendanceRequest req, User teacher) {
+        Attendance a = attendanceRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
+
+        Session session = a.getSession();
+        if (!session.getClassRoom().getTeacher().getId().equals(teacher.getId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        // Kiểm tra cơ chế "sửa điểm danh trong ngày"
+        LocalDate today = LocalDate.now();
+        if (!session.getSessionDate().equals(today)) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Chỉ được phép sửa điểm danh cho các buổi học trong ngày hôm nay.");
+        }
+
+        Attendance.Status newStatus;
+        try {
+            newStatus = Attendance.Status.valueOf(req.getStatus().trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "Trạng thái không hợp lệ: " + req.getStatus());
+        }
+
+        a.setStatus(newStatus);
+        if (req.getNote() != null) {
+            a.setNote(req.getNote());
+        }
+
+        switch (newStatus) {
+            case PRESENT -> a.setMarkCode("A");
+            case LATE -> a.setMarkCode("L");
+            case EXCUSED -> a.setMarkCode("PA");
+            case ABSENT -> a.setMarkCode("AS");
+        }
+
+        attendanceRepository.save(a);
+        log.info("Teacher {} updated attendance ID {} to status {}", teacher.getEmail(), id, newStatus);
+        return toResponse(a);
     }
 
     private AttendanceResponse toResponse(Attendance a) {

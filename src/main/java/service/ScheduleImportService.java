@@ -33,7 +33,7 @@ public class ScheduleImportService {
         var existing = new ArrayList<Session>();
         for (var c : owned) existing.addAll(sessions.findByClassRoomIdOrderBySessionDateDesc(c.getId()));
         int createdClasses = 0, createdLessons = 0, skipped = 0;
-        for (var row : request.lessons()) {
+        for (var row : expandLessons(request)) {
             var date = row.date();
             if (date.getYear() < 2000 || date.getYear() > 2100 || row.slot() < 1 || row.slot() > 6)
                 throw new ApiException(ErrorCode.VALIDATION_FAILED);
@@ -70,5 +70,26 @@ public class ScheduleImportService {
             createdLessons++;
         }
         return Map.of("createdClasses",createdClasses,"createdLessons",createdLessons,"skipped",skipped);
+    }
+
+    private List<ImportScheduleRequest.Lesson> expandLessons(ImportScheduleRequest request) {
+        if (!Boolean.TRUE.equals(request.applyWholeSemester())) return request.lessons();
+        var from = request.applyFrom();
+        var until = request.applyUntil();
+        if (from == null || until == null || until.isBefore(from)
+                || from.plusDays(370).isBefore(until))
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+
+        var expanded = new ArrayList<ImportScheduleRequest.Lesson>();
+        for (var source : request.lessons()) {
+            var date = from;
+            while (date.getDayOfWeek() != source.date().getDayOfWeek()) date = date.plusDays(1);
+            while (!date.isAfter(until)) {
+                expanded.add(new ImportScheduleRequest.Lesson(
+                        source.classCode(), source.subjectCode(), source.room(), date, source.slot()));
+                date = date.plusWeeks(1);
+            }
+        }
+        return expanded;
     }
 }

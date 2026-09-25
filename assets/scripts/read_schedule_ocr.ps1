@@ -38,7 +38,17 @@ try {
     $decoder = Await-Result ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
     $max = [Windows.Media.Ocr.OcrEngine]::MaxImageDimension
     if ($decoder.PixelWidth -gt $max -or $decoder.PixelHeight -gt $max) { throw "Image dimensions must be <= $max pixels. Resize the image and retry." }
-    $bitmap = Await-Result ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+    $transform = New-Object Windows.Graphics.Imaging.BitmapTransform
+    $effectiveWidth = $decoder.PixelWidth
+    $effectiveHeight = $decoder.PixelHeight
+    if ($decoder.PixelWidth -lt 3000 -and $decoder.PixelHeight -lt 2000 -and ($decoder.PixelWidth * 2) -le $max -and ($decoder.PixelHeight * 2) -le $max) {
+        $transform.ScaledWidth = [uint32]($decoder.PixelWidth * 2)
+        $transform.ScaledHeight = [uint32]($decoder.PixelHeight * 2)
+        $transform.InterpolationMode = [Windows.Graphics.Imaging.BitmapInterpolationMode]::Cubic
+        $effectiveWidth = $decoder.PixelWidth * 2
+        $effectiveHeight = $decoder.PixelHeight * 2
+    }
+    $bitmap = Await-Result ($decoder.GetSoftwareBitmapAsync($decoder.BitmapPixelFormat, $decoder.BitmapAlphaMode, $transform, [Windows.Graphics.Imaging.ExifOrientationMode]::IgnoreExifOrientation, [Windows.Graphics.Imaging.ColorManagementMode]::DoNotColorManage)) ([Windows.Graphics.Imaging.SoftwareBitmap])
     $language = New-Object Windows.Globalization.Language('en-US')
     $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($language)
     if (-not $engine) { throw 'Install English OCR in Windows Settings > Language > English > Language options.' }
@@ -46,7 +56,7 @@ try {
     $words = @($result.Lines | ForEach-Object { $_.Words } | ForEach-Object {
         @{ text = $_.Text; x = $_.BoundingRect.X; y = $_.BoundingRect.Y; w = $_.BoundingRect.Width; h = $_.BoundingRect.Height }
     })
-    @{ path = $fileInfo.FullName; width = $decoder.PixelWidth; height = $decoder.PixelHeight; words = $words } | ConvertTo-Json -Depth 5 -Compress
+    @{ path = $fileInfo.FullName; width = $effectiveWidth; height = $effectiveHeight; words = $words } | ConvertTo-Json -Depth 5 -Compress
     $bitmap.Dispose()
     $stream.Dispose()
 } catch {

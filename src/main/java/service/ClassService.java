@@ -12,8 +12,6 @@ import repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,8 +25,19 @@ public class ClassService {
 
     @Transactional
     public ClassResponse create(CreateClassRequest req, User teacher) {
-        if (classRepository.existsByClassCodeAndSubjectCodeAndSemesterAndTeacherId(req.getClassCode(), req.getSubjectCode(), req.getSemester(), teacher.getId())) {
-            throw new ApiException(ErrorCode.CLASS_CODE_EXISTS);
+        var existingOpt = classRepository.findByClassCode(req.getClassCode());
+        if (existingOpt.isPresent()) {
+            ClassRoom existing = existingOpt.get();
+            existing.setTeacher(teacher);
+            existing.setIsActive(true);
+            if (req.getSubjectCode() != null && !req.getSubjectCode().isBlank()) {
+                existing.setSubjectCode(req.getSubjectCode());
+            }
+            if (req.getSemester() != null && !req.getSemester().isBlank()) {
+                existing.setSemester(req.getSemester());
+            }
+            classRepository.save(existing);
+            return toResponse(existing);
         }
         ClassRoom cls = ClassRoom.builder()
                 .classCode(req.getClassCode())

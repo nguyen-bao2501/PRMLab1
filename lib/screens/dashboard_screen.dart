@@ -1724,11 +1724,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SizedBox(
           width: double.infinity,
           child: button(
-            'Làm mới QR',
+            s.open ? 'Làm mới QR' : 'Mở lại điểm danh (Tạo QR)',
             Icons.refresh_rounded,
-            s.open ? () => action(s.refreshQr) : null,
+            (s.open || canOpenLesson(s.selectedSession ?? {}, DateTime.now()))
+                ? () => action(() async {
+                    if (s.open) {
+                      await s.refreshQr();
+                    } else {
+                      final opened = await s.api.openSession(s.selectedSession!['id'] as int);
+                      await s.selectSession(opened);
+                    }
+                  })
+                : null,
+
           ),
         ),
+
         const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
@@ -1902,6 +1913,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ),
+                      if (!s.student)
+                        const DataColumn(
+                          label: Text(
+                            'THAO TÁC',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: muted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                     ],
                     rows: rows
                         .map(
@@ -1980,10 +2002,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     'PRESENT' => green,
                                     'LATE' => fptOrange,
                                     'ABSENT' => const Color(0xFFD65B5B),
+                                    'EXCUSED' => const Color(0xFF3B82F6),
                                     _ => muted,
                                   },
                                 ),
                               ),
+                              if (!s.student)
+                                DataCell(
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_note_rounded,
+                                      size: 20,
+                                      color: ink,
+                                    ),
+                                    tooltip: 'Sửa điểm danh trong ngày',
+                                    onPressed: a['id'] == null
+                                        ? null
+                                        : () => editAttendance(a),
+                                  ),
+                                ),
                             ],
                           ),
                         )
@@ -2330,6 +2367,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ) ??
       false;
+
+  Future<void> editAttendance(Json record) async {
+    final id = record['id'] as int?;
+    if (id == null) return;
+    String currentStatus = record['status']?.toString() ?? 'PRESENT';
+    String newStatus = currentStatus;
+    final noteController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, update) => AlertDialog(
+          title: Text('Sửa điểm danh — ${record['studentName'] ?? ''}'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã SV: ${record['studentCode'] ?? ''} · Email: ${record['email'] ?? ''}',
+                  style: const TextStyle(fontSize: 12, color: muted),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: newStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Trạng thái điểm danh mới',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'PRESENT', child: Text('🟢 Có mặt (PRESENT)')),
+                    DropdownMenuItem(value: 'LATE', child: Text('🟡 Đi muộn (LATE)')),
+                    DropdownMenuItem(value: 'EXCUSED', child: Text('🔵 Có phép (EXCUSED)')),
+                    DropdownMenuItem(value: 'ABSENT', child: Text('🔴 Vắng mặt (ABSENT)')),
+                  ],
+                  onChanged: (v) => update(() => newStatus = v!),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú (tùy chọn, ví dụ: Có đơn xin phép)',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Lưu ý: Chỉ cho phép sửa kết quả điểm danh đối với các buổi học trong ngày hôm nay.',
+                  style: TextStyle(fontSize: 11, color: muted),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Cập nhật'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final note = noteController.text.trim();
+    noteController.dispose();
+
+    if (result == true && mounted) {
+      await action(() async {
+        await s.api.updateAttendance(id, newStatus, note: note);
+        if (s.selectedSession != null) {
+          await s.selectSession(s.selectedSession!);
+        }
+      }, 'Đã sửa trạng thái điểm danh.');
+    }
+  }
   Future<void> createClass() async {
     final data = await form('Tạo lớp học mới', {
       'classCode': 'Mã lớp',
@@ -2354,7 +2469,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   );
 
   Future<void> openLesson(Json classroom, Json lesson) async {
-    if (lesson['status'] == 'SCHEDULED') {
+    final status = lesson['status'];
+    if (status == 'SCHEDULED' || status == 'CLOSED') {
       final start = lessonStart(lesson);
       final ready = canOpenLesson(lesson, DateTime.now());
       final openNow = await showDialog<bool>(
@@ -2365,8 +2481,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           content: Text(
             'Phòng ${lesson['room']}\n${start == null ? '—' : lessonDate(start)} · Slot ${lessonSlot(lesson) + 1}\n'
-            '${classroom['studentCount'] ?? 0} sinh viên\nChưa mở điểm danh, chưa ghi nhận vắng.\n'
-            'Chỉ mở điểm danh từ giờ bắt đầu đến hết slot (135 phút).',
+            '${classroom['studentCount'] ?? 0} sinh viên\n'
+            '${status == 'CLOSED' ? 'Phiên điểm danh trước đã hết hạn. Bạn có thể mở lại điểm danh ngay.' : 'Chưa mở điểm danh, chưa ghi nhận vắng.'}\n'
+            'Cho phép mở điểm danh bất kỳ lúc nào trong ngày (sau giờ bắt đầu).',
           ),
           actions: [
             TextButton(
@@ -2375,7 +2492,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             FilledButton(
               onPressed: ready ? () => Navigator.pop(ctx, true) : null,
-              child: const Text('Mở điểm danh'),
+              child: Text(status == 'CLOSED' ? 'Mở lại điểm danh' : 'Mở điểm danh'),
             ),
           ],
         ),
@@ -2388,6 +2505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (mounted) setState(() => page = 3);
       });
     } else {
+
       await action(() async {
         await s.selectClass(classroom);
         await s.selectSession(lesson);

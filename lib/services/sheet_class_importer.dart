@@ -82,9 +82,8 @@ class SheetClassImporter {
           }
           if (sameCode.isNotEmpty) {
             final existing = sameCode.single;
-            if (existing['subjectCode'] != subject ||
-                existing['sheetName'] != null ||
-                existing['spreadsheetId'] != null) {
+            final existingSid = existing['spreadsheetId']?.toString();
+            if (existingSid != null && existingSid.isNotEmpty && existingSid != spreadsheetId) {
               throw const ApiException(
                 'Tên lớp đã tồn tại hoặc đang liên kết Sheet khác. Đổi tên tab để tạo lớp riêng.',
               );

@@ -8,7 +8,10 @@ import 'package:http/http.dart' as http;
 
 import 'google_web_sign_in_button.dart';
 
-const _googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+const _googleClientId = String.fromEnvironment(
+  'GOOGLE_CLIENT_ID',
+  defaultValue: String.fromEnvironment('GOOGLE_DESKTOP_CLIENT_ID'),
+);
 const _apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: 'http://10.0.2.2:8080',
@@ -101,6 +104,9 @@ class _GoogleLoginPageState extends State<GoogleLoginPage> {
       );
 
       final body = response.body.isEmpty ? '(empty)' : response.body;
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw StateError('HTTP ${response.statusCode}\n$body');
+      }
       setState(() => _result = 'HTTP ${response.statusCode}\n$body');
     } catch (error) {
       setState(() => _result = 'Dang nhap that bai:\n$error');

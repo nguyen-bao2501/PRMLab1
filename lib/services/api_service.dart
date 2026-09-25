@@ -127,11 +127,23 @@ class ApiService {
       'startTime': start.toUtc().toIso8601String(),
     },
   ) as Json;
-  Future<Json> importSchedule(String semester, List<Json> lessons) async =>
+  Future<Json> importSchedule(
+    String semester,
+    List<Json> lessons, {
+    bool applyWholeSemester = false,
+    String? applyFrom,
+    String? applyUntil,
+  }) async =>
       await request(
         'POST',
         '/sessions/import-schedule',
-        body: {'semester': semester, 'lessons': lessons},
+        body: {
+          'semester': semester,
+          'lessons': lessons,
+          'applyWholeSemester': applyWholeSemester,
+          if (applyFrom != null) 'applyFrom': applyFrom,
+          if (applyUntil != null) 'applyUntil': applyUntil,
+        },
       ) as Json;
   Future<Json> openSession(int id) async =>
       await request('POST', '/sessions/$id/open') as Json;
@@ -141,6 +153,15 @@ class ApiService {
       await request('POST', '/sessions/$id/close') as Json;
   Future<List<Json>> attendances(int id) async =>
       _list(await request('GET', '/attendances', query: {'sessionId': '$id'}));
+  Future<Json> updateAttendance(int id, String status, {String? note}) async =>
+      await request(
+        'PUT',
+        '/attendances/$id',
+        body: {
+          'status': status,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      ) as Json;
   Future<Json> checkIn(String qrToken) async => await request(
     'POST',
     '/attendances/check-in',

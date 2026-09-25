@@ -17,13 +17,62 @@ class ImportScheduleImageDialog extends StatefulWidget {
       _ImportScheduleImageDialogState();
 }
 
+enum SemesterBlockMode {
+  block10,
+  block3,
+  full,
+  custom,
+}
+
 class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
   final form = GlobalKey<FormState>();
   final semester = TextEditingController();
   ScheduleImageRead? read;
-  DateTime? monday;
+  DateTime? monday, applyFrom, applyUntil;
+  bool applyWholeSemester = false;
+  SemesterBlockMode blockMode = SemesterBlockMode.block10;
   bool busy = false, reviewed = false;
   String? error, result;
+
+  void _updateApplyDates() {
+    if (monday == null) return;
+    switch (blockMode) {
+      case SemesterBlockMode.block10:
+        applyFrom = monday;
+        applyUntil = monday!.add(const Duration(days: 7 * 10 - 1));
+        break;
+      case SemesterBlockMode.block3:
+        applyFrom = monday!.add(const Duration(days: 7 * 12));
+        applyUntil = monday!.add(const Duration(days: 7 * 15 - 1));
+        break;
+      case SemesterBlockMode.full:
+        applyFrom = monday;
+        applyUntil = monday!.add(const Duration(days: 7 * 15 - 1));
+        break;
+      case SemesterBlockMode.custom:
+        applyFrom ??= monday;
+        applyUntil ??= monday!.add(const Duration(days: 7 * 10 - 1));
+        break;
+    }
+  }
+
+  String _getBlockDescription() {
+    switch (blockMode) {
+      case SemesterBlockMode.block10:
+        return 'Block 10 tuần';
+      case SemesterBlockMode.block3:
+        return 'Block 3 tuần (bắt đầu sau 2 tuần thi)';
+      case SemesterBlockMode.full:
+        return 'Cả kỳ học (15 tuần)';
+      case SemesterBlockMode.custom:
+        final days = applyUntil != null && applyFrom != null
+            ? applyUntil!.difference(applyFrom!).inDays + 1
+            : 0;
+        final weeks = (days / 7).ceil();
+        return 'Tùy chỉnh ($days ngày ~ $weeks tuần)';
+    }
+  }
+
   @override
   void dispose() {
     semester.dispose();
@@ -32,6 +81,8 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
 
   String date(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  String isoDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   Future<void> choose() async {
     setState(() {
       busy = true;
@@ -43,6 +94,8 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
         setState(() {
           read = data;
           monday = data.recognition.weekStart;
+          _updateApplyDates();
+          applyWholeSemester = false;
           reviewed = false;
           result = null;
         });
@@ -73,6 +126,13 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
       );
       return;
     }
+    if (applyWholeSemester &&
+        (applyFrom == null ||
+            applyUntil == null ||
+            applyUntil!.isBefore(applyFrom!))) {
+      setState(() => error = 'Chọn ngày bắt đầu và ngày kết thúc của học kỳ.');
+      return;
+    }
     setState(() {
       busy = true;
       error = null;
@@ -91,6 +151,9 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
             'slot': r.slot,
           };
         }).toList(),
+        applyWholeSemester: applyWholeSemester,
+        applyFrom: applyWholeSemester ? isoDate(applyFrom!) : null,
+        applyUntil: applyWholeSemester ? isoDate(applyUntil!) : null,
       );
       if (mounted)
         setState(
@@ -156,12 +219,14 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
                   ),
                 if (read != null) ...[
                   SizedBox(
-                    height: 200,
+                    height: 420,
                     width: double.infinity,
                     child: InteractiveViewer(
-                      minScale: 1,
-                      maxScale: 5,
-                      child: Image.memory(read!.image, fit: BoxFit.contain),
+                      constrained: false,
+                      boundaryMargin: const EdgeInsets.all(48),
+                      minScale: .25,
+                      maxScale: 6,
+                      child: Image.memory(read!.image),
                     ),
                   ),
                   ...read!.recognition.warnings.map(
@@ -201,18 +266,232 @@ class _ImportScheduleImageDialogState extends State<ImportScheduleImageDialog> {
                             if (selected != null && mounted)
                               setState(() {
                                 monday = selected;
+                                _updateApplyDates();
                                 reviewed = false;
                               });
                           },
                     icon: const Icon(Icons.calendar_month),
                     label: Text(
                       monday == null
-                          ? 'Chọn thứ Hai đầu tuần'
-                          : 'Ngày đầu tuần: ${date(monday!)}',
+                          ? 'Chọn thứ Hai đầu tuần học kỳ (Tuần 1)'
+                          : 'Thứ Hai đầu kỳ: ${date(monday!)}',
                     ),
                   ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: applyWholeSemester,
+                    onChanged: busy || result != null
+                        ? null
+                        : (value) => setState(() {
+                            applyWholeSemester = value;
+                            if (value) {
+                              _updateApplyDates();
+                            }
+                            reviewed = false;
+                          }),
+                    title: const Text('Áp dụng lịch này theo Block / Cả kỳ'),
+                    subtitle: const Text(
+                      'Tự động lặp lịch học theo Block 10 tuần, Block 3 tuần hoặc trọn kỳ học 13 tuần.',
+                    ),
+                  ),
+                  if (applyWholeSemester) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Lựa chọn Phạm vi áp dụng:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ChoiceChip(
+                                selected: blockMode == SemesterBlockMode.block10,
+                                label: const Text('Block 10 tuần'),
+                                avatar: const Icon(Icons.looks_3_outlined, size: 18),
+                                onSelected: busy || result != null
+                                    ? null
+                                    : (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            blockMode = SemesterBlockMode.block10;
+                                            _updateApplyDates();
+                                            reviewed = false;
+                                          });
+                                        }
+                                      },
+                              ),
+                              ChoiceChip(
+                                selected: blockMode == SemesterBlockMode.block3,
+                                label: const Text('Block 3 tuần'),
+                                avatar: const Icon(Icons.date_range, size: 18),
+                                onSelected: busy || result != null
+                                    ? null
+                                    : (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            blockMode = SemesterBlockMode.block3;
+                                            _updateApplyDates();
+                                            reviewed = false;
+                                          });
+                                        }
+                                      },
+                              ),
+                              ChoiceChip(
+                                selected: blockMode == SemesterBlockMode.full,
+                                label: const Text('Cả kỳ học'),
+                                avatar: const Icon(Icons.calendar_view_month, size: 18),
+                                onSelected: busy || result != null
+                                    ? null
+                                    : (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            blockMode = SemesterBlockMode.full;
+                                            _updateApplyDates();
+                                            reviewed = false;
+                                          });
+                                        }
+                                      },
+                              ),
+                              ChoiceChip(
+                                selected: blockMode == SemesterBlockMode.custom,
+                                label: const Text('Tùy chỉnh ngày'),
+                                avatar: const Icon(Icons.edit_calendar, size: 18),
+                                onSelected: busy || result != null
+                                    ? null
+                                    : (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            blockMode = SemesterBlockMode.custom;
+                                            _updateApplyDates();
+                                            reviewed = false;
+                                          });
+                                        }
+                                      },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (applyFrom != null && applyUntil != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer
+                                    .withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Khoảng ngày áp dụng: ${date(applyFrom!)} ➔ ${date(applyUntil!)} (${_getBlockDescription()})',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (blockMode == SemesterBlockMode.custom) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: busy || result != null
+                                      ? null
+                                      : () async {
+                                          final selected = await showDatePicker(
+                                            context: context,
+                                            initialDate: applyFrom ?? monday ?? DateTime.now(),
+                                            firstDate: DateTime(2000),
+                                            lastDate: DateTime(2100, 12, 31),
+                                          );
+                                          if (selected != null && mounted) {
+                                            setState(() {
+                                              applyFrom = selected;
+                                              if (applyUntil == null ||
+                                                  applyUntil!.isBefore(selected)) {
+                                                applyUntil = selected.add(
+                                                  const Duration(days: 7 * 10 - 1),
+                                                );
+                                              }
+                                              reviewed = false;
+                                            });
+                                          }
+                                        },
+                                  icon: const Icon(Icons.event),
+                                  label: Text(
+                                    applyFrom == null
+                                        ? 'Chọn ngày bắt đầu'
+                                        : 'Bắt đầu: ${date(applyFrom!)}',
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: busy || result != null
+                                      ? null
+                                      : () async {
+                                          final selected = await showDatePicker(
+                                            context: context,
+                                            initialDate:
+                                                applyUntil ?? applyFrom ?? DateTime.now(),
+                                            firstDate: applyFrom ?? DateTime(2000),
+                                            lastDate: DateTime(2100, 12, 31),
+                                          );
+                                          if (selected != null && mounted) {
+                                            setState(() {
+                                              applyUntil = selected;
+                                              reviewed = false;
+                                            });
+                                          }
+                                        },
+                                  icon: const Icon(Icons.event_available),
+                                  label: Text(
+                                    applyUntil == null
+                                        ? 'Chọn ngày kết thúc'
+                                        : 'Kết thúc: ${date(applyUntil!)}',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   const Text(
-                    'Lịch cũ được lưu ở trạng thái chưa điểm danh, không tự ghi nhận vắng. Chỉ nhập tuần đã chọn, không tự lặp cả học kỳ.',
+                    'Các buổi được tạo ở trạng thái chưa điểm danh; bạn chỉ mở QR khi đến giờ học.',
                   ),
                   const SizedBox(height: 12),
                   Text(

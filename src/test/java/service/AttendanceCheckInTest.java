@@ -40,8 +40,10 @@ class AttendanceCheckInTest {
         when(roster.existsByClassRoomIdAndStudentId(3L, 5L)).thenReturn(true);
         when(rows.save(any())).thenAnswer(call -> {
             Attendance row = call.getArgument(0);
-            row.setId(10L);
-            row.setCheckInTime(Instant.now());
+            if (row != null) {
+                if (row.getId() == null) row.setId(10L);
+                if (row.getCheckInTime() == null) row.setCheckInTime(Instant.now());
+            }
             return row;
         });
     }
@@ -81,5 +83,38 @@ class AttendanceCheckInTest {
     @Test void duplicateCheckInIsRejected() {
         when(rows.existsBySessionIdAndStudentId(8L, 5L)).thenReturn(true);
         rejects(ErrorCode.ALREADY_CHECKED_IN);
+    }
+
+    @Test
+    void teacherCanUpdateAttendanceSameDay() {
+        User teacher = User.builder().id(2L).email("teacher@example.org").role(User.Role.TEACHER).build();
+        ClassRoom classroom = ClassRoom.builder().id(3L).teacher(teacher).build();
+        Session todaySession = Session.builder().id(8L).classRoom(classroom).sessionDate(java.time.LocalDate.now()).build();
+        Attendance existing = Attendance.builder().id(10L).session(todaySession).student(student).status(Attendance.Status.ABSENT).build();
+
+        when(rows.findById(10L)).thenReturn(Optional.of(existing));
+        when(rows.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        var req = new dto.request.UpdateAttendanceRequest("EXCUSED", "Đơn xin phép");
+        var res = service.updateAttendance(10L, req, teacher);
+
+        assertEquals("EXCUSED", res.getStatus());
+        assertEquals("PA", res.getMarkCode());
+    }
+
+    @Test
+    void updateAttendanceRejectedIfNotSameDay() {
+        User teacher = User.builder().id(2L).email("teacher@example.org").role(User.Role.TEACHER).build();
+        ClassRoom classroom = ClassRoom.builder().id(3L).teacher(teacher).build();
+        Session pastSession = Session.builder().id(8L).classRoom(classroom).sessionDate(java.time.LocalDate.now().minusDays(1)).build();
+        Attendance existing = Attendance.builder().id(10L).session(pastSession).student(student).status(Attendance.Status.ABSENT).build();
+
+        when(rows.findById(10L)).thenReturn(Optional.of(existing));
+
+        var req = new dto.request.UpdateAttendanceRequest("PRESENT", null);
+        var err = assertThrows(ApiException.class, () -> service.updateAttendance(10L, req, teacher));
+
+        assertEquals(ErrorCode.VALIDATION_FAILED, err.getErrorCode());
+        assertTrue(err.getMessage().contains("Chỉ được phép sửa điểm danh"));
     }
 }

@@ -30,11 +30,13 @@ String lessonStatus(Json x) => switch (x['status']) {
 };
 bool canOpenLesson(Json x, DateTime now) {
   final start = lessonStart(x);
-  return x['status'] == 'SCHEDULED' &&
-      start != null &&
-      !now.isBefore(start) &&
-      now.isBefore(start.add(const Duration(minutes: 135)));
+  final status = x['status'];
+  if ((status != 'SCHEDULED' && status != 'CLOSED') || start == null) return false;
+  final isSameDay =
+      now.year == start.year && now.month == start.month && now.day == start.day;
+  return isSameDay && !now.isBefore(start);
 }
+
 
 class TeachingSchedule extends StatefulWidget {
   const TeachingSchedule({

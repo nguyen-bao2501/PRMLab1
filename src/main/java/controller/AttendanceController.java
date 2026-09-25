@@ -52,6 +52,17 @@ public class AttendanceController {
         return ApiResponse.ok(attendanceService.listByStudent(student));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @Operation(summary = "GV sửa kết quả điểm danh của sinh viên trong ngày")
+    public ApiResponse<AttendanceResponse> updateAttendance(
+            @PathVariable Long id,
+            @Valid @RequestBody dto.request.UpdateAttendanceRequest req,
+            @CurrentUser User teacher) {
+        return ApiResponse.ok("Cập nhật điểm danh thành công",
+                attendanceService.updateAttendance(id, req, teacher));
+    }
+
     private String extractIp(HttpServletRequest req) {
         String xff = req.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();

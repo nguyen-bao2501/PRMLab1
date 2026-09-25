@@ -30,6 +30,9 @@ public class WebAttendanceController {
     @Value("${app.google.web-client-id:}")
     private String webClientId = "";
 
+    @Value("${app.google.client-id:}")
+    private String clientId = "";
+
     public record WebCheckIn(@NotBlank String idToken, @NotBlank String qrToken) {}
     public record IdentityRequest(@NotBlank String idToken) {}
 
@@ -42,7 +45,8 @@ public class WebAttendanceController {
 
     @GetMapping("/config")
     public ApiResponse<Map<String, String>> config() {
-        return ApiResponse.ok(Map.of("clientId", webClientId));
+        String effectiveClientId = (webClientId != null && !webClientId.isBlank()) ? webClientId : clientId;
+        return ApiResponse.ok(Map.of("clientId", effectiveClientId));
     }
 
     @PostMapping("/check-in")
@@ -66,8 +70,12 @@ public class WebAttendanceController {
         if (!Boolean.TRUE.equals(student.getIsActive())) {
             throw new ApiException(ErrorCode.FORBIDDEN, "Tài khoản đã bị vô hiệu hóa.");
         }
-        if (student.getGoogleId() != null && !student.getGoogleId().equals(payload.getSubject())) {
-            throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT);
+        if (student.getGoogleId() != null && !student.getGoogleId().startsWith("pending_") && !student.getGoogleId().equals(payload.getSubject())) {
+            throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT, "Tài khoản Google không khớp với tài khoản đã liên kết.");
+        }
+        if (student.getGoogleId() == null || student.getGoogleId().startsWith("pending_")) {
+            student.setGoogleId(payload.getSubject());
+            users.save(student);
         }
         return student;
     }

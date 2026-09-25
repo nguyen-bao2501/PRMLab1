@@ -1,16 +1,16 @@
-package  service;
+package service;
 
-import  dto.request.CreateSessionRequest;
-import  dto.response.SessionResponse;
-import  entity.ClassRoom;
-import  entity.Session;
-import  entity.User;
-import  exception.ApiException;
-import  exception.ErrorCode;
-import  repository.AttendanceRepository;
-import  repository.ClassRepository;
-import  repository.EnrollmentRepository;
-import  repository.SessionRepository;
+import dto.request.CreateSessionRequest;
+import dto.response.SessionResponse;
+import entity.ClassRoom;
+import entity.Session;
+import entity.User;
+import exception.ApiException;
+import exception.ErrorCode;
+import repository.AttendanceRepository;
+import repository.ClassRepository;
+import repository.EnrollmentRepository;
+import repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +30,15 @@ public class SessionService {
 
     @jakarta.annotation.PostConstruct
     void validatePublicUrl() {
-        if (publicBaseUrl.isBlank()) return;
+        if (publicBaseUrl == null || publicBaseUrl.isBlank()) return;
         java.net.URI uri = java.net.URI.create(publicBaseUrl);
-        if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null
-                || uri.getFragment() != null || !("https".equals(uri.getScheme())
-                || ("http".equals(uri.getScheme()) && "localhost".equals(uri.getHost())))) {
-            throw new IllegalArgumentException("ATTENDANCE_PUBLIC_BASE_URL must be an HTTPS URL (localhost allowed for testing)");
+        if (uri.getHost() == null || uri.getScheme() == null
+                || (!"https".equalsIgnoreCase(uri.getScheme())
+                && !("http".equalsIgnoreCase(uri.getScheme())
+                && ("localhost".equalsIgnoreCase(uri.getHost())
+                || "127.0.0.1".equals(uri.getHost()))))) {
+            throw new IllegalArgumentException(
+                    "ATTENDANCE_PUBLIC_BASE_URL must be an HTTPS URL (localhost allowed for testing)");
         }
     }
 
@@ -49,15 +52,19 @@ public class SessionService {
     public SessionResponse schedule(CreateSessionRequest req, User teacher) {
         ClassRoom cls = classRepository.findById(req.getClassId())
                 .orElseThrow(() -> new ApiException(ErrorCode.CLASS_NOT_FOUND));
-        if (!cls.getTeacher().getId().equals(teacher.getId()))
+        if (!cls.getTeacher().getId().equals(teacher.getId())) {
             throw new ApiException(ErrorCode.FORBIDDEN);
+        }
         if (req.getStartTime() == null || !req.getStartTime().isAfter(Instant.now())
-                || req.getRoom() == null || req.getRoom().isBlank())
+                || req.getRoom() == null || req.getRoom().isBlank()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
         if (sessionRepository.existsByClassRoomTeacherIdAndStatusNotAndStartTimeGreaterThanAndStartTimeLessThan(
                 teacher.getId(), Session.Status.CANCELLED,
-                req.getStartTime().minusSeconds(135 * 60), req.getStartTime().plusSeconds(135 * 60)))
+                req.getStartTime().minusSeconds(135 * 60),
+                req.getStartTime().plusSeconds(135 * 60))) {
             throw new ApiException(ErrorCode.SCHEDULE_CONFLICT);
+        }
         Session s = Session.builder().classRoom(cls)
                 .sessionDate(req.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate())
                 .startTime(req.getStartTime()).room(req.getRoom().trim())
@@ -72,13 +79,19 @@ public class SessionService {
         Session s = sessionRepository.findForOpening(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
         assertOwner(s, teacher);
-        if (s.getStatus() != Session.Status.SCHEDULED)
+        if (s.getStatus() != Session.Status.SCHEDULED && s.getStatus() != Session.Status.CLOSED) {
             throw new ApiException(ErrorCode.SESSION_CLOSED);
+        }
         Instant now = Instant.now();
-        // A scheduled slot lasts 135 minutes; attendance opens at its start.
-        if (now.isBefore(s.getStartTime()) || !now.isBefore(s.getStartTime().plusSeconds(135 * 60)))
-            throw new ApiException(ErrorCode.ATTENDANCE_WINDOW);
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        java.time.LocalDate sessionDay = s.getSessionDate() != null
+                ? s.getSessionDate()
+                : s.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+        if (now.isBefore(s.getStartTime()) || !sessionDay.equals(today)) {
+            throw new ApiException(ErrorCode.ATTENDANCE_WINDOW, "Chỉ được phép mở điểm danh trong ngày của buổi học.");
+        }
         s.setStatus(Session.Status.OPEN);
+        s.setEndTime(null);
         s.setQrExpiresAt(now.plusSeconds(qrTokenService.getTtlSeconds()));
         return toResponse(s, qrTokenService.generateForSession(s.getId()), true);
     }
@@ -87,11 +100,9 @@ public class SessionService {
     public SessionResponse create(CreateSessionRequest req, User teacher) {
         ClassRoom cls = classRepository.findById(req.getClassId())
                 .orElseThrow(() -> new ApiException(ErrorCode.CLASS_NOT_FOUND));
-
         if (!cls.getTeacher().getId().equals(teacher.getId())) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
-
         Session s = Session.builder()
                 .classRoom(cls)
                 .sessionDate(LocalDate.now())
@@ -101,12 +112,8 @@ public class SessionService {
                 .status(Session.Status.OPEN)
                 .build();
         sessionRepository.save(s);
-
-        // Tăng total_sessions
         cls.setTotalSessions(cls.getTotalSessions() + 1);
-
-        String token = qrTokenService.generateForSession(s.getId());
-        return toResponse(s, token, true);
+        return toResponse(s, qrTokenService.generateForSession(s.getId()), true);
     }
 
     @Transactional
@@ -114,34 +121,29 @@ public class SessionService {
         Session s = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
         assertOwner(s, teacher);
-
-        if (s.getStatus() != Session.Status.OPEN) {
+        if (s.getStatus() != Session.Status.OPEN && s.getStatus() != Session.Status.CLOSED) {
             throw new ApiException(ErrorCode.SESSION_CLOSED);
         }
-
+        s.setStatus(Session.Status.OPEN);
+        s.setEndTime(null);
         s.setQrExpiresAt(Instant.now().plusSeconds(qrTokenService.getTtlSeconds()));
-        String token = qrTokenService.generateForSession(s.getId());
-        return toResponse(s, token, false);
+        return toResponse(s, qrTokenService.generateForSession(s.getId()), false);
     }
+
 
     @Transactional
     public SessionResponse close(Long sessionId, User teacher) {
         Session s = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
         assertOwner(s, teacher);
-
         closeAndMarkAbsent(s);
         return toResponse(s, null, false);
     }
 
-    /** Closes expired QR sessions and marks every roster student who did not
-     * check in as absent. It is idempotent, so manual close and the scheduler
-     * cannot create duplicate attendance rows. */
     @Scheduled(fixedDelayString = "${app.attendance.expiration-check-ms:15000}")
     @Transactional
     public void closeExpiredSessions() {
-        sessionRepository.findByStatusAndQrExpiresAtLessThanEqual(
-                        Session.Status.OPEN, Instant.now())
+        sessionRepository.findByStatusAndQrExpiresAtLessThanEqual(Session.Status.OPEN, Instant.now())
                 .forEach(this::closeAndMarkAbsent);
     }
 
@@ -150,20 +152,19 @@ public class SessionService {
         if (session.getStatus() != Session.Status.OPEN) return;
         session.setStatus(Session.Status.CLOSED);
         session.setEndTime(Instant.now());
-        enrollmentRepository.findByClassRoomId(session.getClassRoom().getId())
-                .forEach(enrollment -> {
-                    if (!attendanceRepository.existsBySessionIdAndStudentId(
-                            session.getId(), enrollment.getStudent().getId())) {
-                        attendanceRepository.save(entity.Attendance.builder()
-                                .session(session)
-                                .student(enrollment.getStudent())
-                                .status(entity.Attendance.Status.ABSENT)
-                                .markCode("AS")
-                                .source("SYSTEM")
-                                .note("QR het han hoac giao vien ket thuc diem danh")
-                                .build());
-                    }
-                });
+        enrollmentRepository.findByClassRoomId(session.getClassRoom().getId()).forEach(enrollment -> {
+            if (!attendanceRepository.existsBySessionIdAndStudentId(
+                    session.getId(), enrollment.getStudent().getId())) {
+                attendanceRepository.save(entity.Attendance.builder()
+                        .session(session)
+                        .student(enrollment.getStudent())
+                        .status(entity.Attendance.Status.ABSENT)
+                        .markCode("AS")
+                        .source("SYSTEM")
+                        .note("QR het han hoac giao vien ket thuc diem danh")
+                        .build());
+            }
+        });
     }
 
     public List<SessionResponse> listByClass(Long classId, User teacher) {
@@ -173,8 +174,7 @@ public class SessionService {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
         return sessionRepository.findByClassRoomIdOrderBySessionDateDesc(classId)
-                .stream().map(s -> toResponse(s, null, false))
-                .collect(Collectors.toList());
+                .stream().map(s -> toResponse(s, null, false)).collect(Collectors.toList());
     }
 
     public SessionResponse getById(Long id, User teacher) {
@@ -195,22 +195,29 @@ public class SessionService {
                 .id(s.getId())
                 .classId(s.getClassRoom().getId())
                 .classCode(s.getClassRoom().getClassCode())
-                //.className(s.getClassRoom().getClassName())
                 .sessionDate(s.getSessionDate())
                 .startTime(s.getStartTime())
                 .endTime(s.getEndTime())
                 .room(s.getRoom())
                 .status(s.getStatus().name())
                 .qrToken(qrToken)
-                .qrUrl(qrToken == null || publicBaseUrl.isBlank() ? null
-                        : publicBaseUrl.replaceAll("/+$", "") + "/check-in.html#token=" + qrToken)
+                .qrUrl(qrToken == null ? null : buildCheckInUrl(qrToken))
                 .qrExpiresAt(s.getQrExpiresAt());
-
         if (includeStats) {
             b.totalStudents(enrollmentRepository.countByClassRoomId(s.getClassRoom().getId()));
-            b.checkedIn(attendanceRepository.countBySessionIdAndStatus(s.getId(), entity.Attendance.Status.PRESENT)
-                    + attendanceRepository.countBySessionIdAndStatus(s.getId(), entity.Attendance.Status.LATE));
+            b.checkedIn(attendanceRepository.countBySessionIdAndStatus(
+                    s.getId(), entity.Attendance.Status.PRESENT)
+                    + attendanceRepository.countBySessionIdAndStatus(
+                    s.getId(), entity.Attendance.Status.LATE));
         }
         return b.build();
+    }
+
+    private String buildCheckInUrl(String qrToken) {
+        String baseUrl = publicBaseUrl == null || publicBaseUrl.isBlank()
+                ? "http://localhost:8080"
+                : publicBaseUrl.replaceAll("/+$", "");
+        return baseUrl + "/check-in.html#token="
+                + java.net.URLEncoder.encode(qrToken, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
