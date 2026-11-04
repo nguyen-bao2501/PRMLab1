@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "140080821533",
+    "project_id": "bakery-platform-mss",
+    "storage_bucket": "bakery-platform-mss.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:140080821533:android:0a275d27180df42bd55df4",
+        "android_client_info": {
+          "package_name": "com.example.prm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfMQjH3-cUKeqsghjf-w9AxXpL8AFL5OE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

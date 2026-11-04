@@ -1,3 +1,59 @@
+# PRM393 — Lab 3: Cloud-Enabled Mobile App (Firebase, MVVM, AI Code Review)
+
+> Ứng dụng Quản lý Giảng dạy & Điểm danh thông minh FPT University được phát triển tiếp nối từ đồ án thiết kế Figma (Lab 2), áp dụng kiến trúc chuẩn **MVVM với Provider**, kết nối nền tảng điện toán đám mây **Firebase** và Backend Spring Boot.
+
+---
+
+## 📌 Deliverables & Thư mục nộp bài Lab 3
+
+- **Mã nguồn ứng dụng (MVVM)**: `lib/`
+  - `lib/theme/`: Hệ thống Design Tokens từ Figma (Màu sắc, Typography, Bo góc)
+  - `lib/widgets/`: Thư viện Component tái sử dụng từ Lab 2
+  - `lib/models/`: Plain Dart data models & Explicit UI states (`UiState`)
+  - `lib/services/`: API Service & Class Repository
+  - `lib/firebase/`: 6 dịch vụ đám mây Firebase (Auth, Storage, FCM, Analytics, Crashlytics, RemoteConfig)
+  - `lib/viewmodels/`: Provider ViewModels độc lập, không phụ thuộc UI
+  - `lib/screens/`: 10 màn hình Figma hoàn chỉnh từ Lab 2
+- **Cấu hình đám mây Firebase**: `firebase/`
+  - `firebase/storage.rules`: Quy tắc bảo mật quyền truy cập Cloud Storage theo người dùng (`reports/{userId}/...`)
+  - `firebase/remote-config-defaults.json`: Tham số cấu hình từ xa mặc định
+- **Tài liệu đặc tả kỹ thuật**: `docs/`
+  - `docs/design-traceability.md`: Ma trận đối soát 10 màn hình Figma sang Flutter
+  - `docs/architecture.md`: Sơ đồ lớp Mermaid, Sequence Diagram, Bảng ánh xạ ViewModel - Service
+  - `docs/analytics-plan.md`: Kế hoạch 7+ sự kiện phân tích Firebase Analytics
+  - `docs/code-review.md`: Biên bản rà soát mã nguồn bằng AI và giải trình quyết định xử lý
+
+---
+
+## 🛠 Phiên bản công cụ sử dụng (Pinned Versions)
+
+- **Flutter**: 3.24+ (Dart SDK ^3.13.3)
+- **State Management**: `provider: ^6.1.2`
+- **Firebase Ecosystem**:
+  - `firebase_core: ^3.6.0`
+  - `firebase_auth: ^5.3.1`
+  - `firebase_storage: ^12.3.2`
+  - `firebase_messaging: ^15.1.3`
+  - `firebase_analytics: ^11.3.3`
+  - `firebase_crashlytics: ^4.1.3`
+  - `firebase_remote_config: ^5.1.3`
+- **PDF Generation**: `pdf: ^3.11.1`
+- **AI Review Tool**: Google Antigravity Coding Assistant (Gemini 3.8 Flash)
+
+---
+
+## 🚀 Hướng dẫn khởi chạy ứng dụng (How to Run)
+
+1. **Cài đặt thư viện**:
+   `flutter pub get`
+2. **Khởi chạy ứng dụng**:
+   `flutter run`
+3. **Kiểm tra 6 dịch vụ Firebase**:
+   - Mở ứng dụng -> Bấm Menu góc trên bên trái -> Chọn **"Firebase Demo Area"** để kích hoạt các hành động kiểm thử (Crashlytics, Storage PDF Upload, Remote Config, FCM notifications).
+
+---
+
+
 
 
 ## 🏗 Kiến trúc
@@ -624,5 +680,6 @@ curl -X POST $BASE/attendances/check-in \
 curl -X POST $BASE/exports/session/$SESSION_ID \
   -H "Authorization: Bearer $TEACHER_TOKEN"
 ```
+
 
 

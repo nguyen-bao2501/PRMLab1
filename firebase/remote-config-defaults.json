@@ -1,0 +1,7 @@
+{
+  "feature_ocr_schedule_enabled": true,
+  "sync_interval_seconds": 30,
+  "announcement_banner_text": "Chào mừng học kỳ mới FA2026 - Điểm danh đúng giờ!",
+  "max_recent_classes_display": 5,
+  "attendance_warning_threshold_percent": 20
+}
