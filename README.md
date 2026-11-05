@@ -22,6 +22,8 @@
   - `docs/architecture.md`: Sơ đồ lớp Mermaid, Sequence Diagram, Bảng ánh xạ ViewModel - Service
   - `docs/analytics-plan.md`: Kế hoạch 7+ sự kiện phân tích Firebase Analytics
   - `docs/code-review.md`: Biên bản rà soát mã nguồn bằng AI và giải trình quyết định xử lý
+  - `docs/test-plan.md`: Luồng quan trọng, test cases ARTEMIS và mẫu ghi nhận bằng chứng
+- **Automated E2E tests**: `e2e_test/` (pytest + ARTEMIS Python SDK)
 
 ---
 
@@ -53,6 +55,51 @@
 
 ---
 
+## 🤖 Automated E2E tests with ARTEMIS
+
+The Android entry point `lib/main.dart` runs the lecturer app. Run the tests on an
+Android emulator/device connected to the ARTEMIS daemon, with the app installed and a
+dedicated test account available on the device. Use an isolated backend/Firebase
+project populated with synthetic test data.
+
+ARTEMIS is pinned to commit
+[`351ca8422f7b5b54e80a9c1ce03a222e02415b6b`](https://github.com/google/artemis/commit/351ca8422f7b5b54e80a9c1ce03a222e02415b6b)
+in `e2e_test/pyproject.toml`. Python 3.12+, `uv`, and ADB are required.
+
+From the repository root in PowerShell:
+
+```powershell
+Set-Location e2e_test
+uv sync
+$env:ARTEMIS_BASE_URL = "http://127.0.0.1:8000"
+$env:ARTEMIS_DEVICE_SERIAL = "emulator-5554"
+$env:ARTEMIS_APP_PACKAGE = "com.example.prm"
+$env:ARTEMIS_TEST_CLASS_CODE = "PRM393"
+$env:ARTEMIS_TEST_SHEET_TAB = "E2E_TEST_DATA"
+$env:ARTEMIS_TEST_SESSION_DATE = "20/12/2026"
+$env:ARTEMIS_TEST_SESSION_ROOM = "E2E-A101"
+$env:ARTEMIS_EXPECTED_OCR_ENABLED = "true"
+$env:ARTEMIS_EXPECTED_SYNC_INTERVAL = "30"
+$env:ARTEMIS_TEST_PUSH_TITLE = "ARTEMIS lab test"
+New-Item -ItemType Directory -Force artifacts | Out-Null
+uv run pytest --count=3 --junitxml=artifacts/junit.xml
+```
+
+Set values to match the isolated test environment; do not put account credentials,
+API keys, private Sheet URLs, or student data in source control. The import test uses
+the Sheet already linked to the test class. Before repeating tests that create/import
+data, reset the isolated test fixtures as needed. Send a new Firebase Console push
+before each repeat of the FCM test. Set `ARTEMIS_TOKEN` only when the daemon requires
+it, and set `ANDROID_SERIAL` if the local ADB serial differs from
+`ARTEMIS_DEVICE_SERIAL`.
+
+The fixture writes task trace IDs and durations (not model output or account data) to
+`e2e_test/artifacts/task-results.jsonl`. Keep the ARTEMIS daemon's screenshots/replay
+with the submitted evidence and complete the results/exploratory-session sections in
+`docs/test-plan.md`. Regression tests use Flash; run the unscripted 15–30 minute
+exploratory session separately with the Pro profile.
+
+---
 
 
 
@@ -680,6 +727,3 @@ curl -X POST $BASE/attendances/check-in \
 curl -X POST $BASE/exports/session/$SESSION_ID \
   -H "Authorization: Bearer $TEACHER_TOKEN"
 ```
-
-
-

@@ -45,3 +45,10 @@ windows/flutter/generated_plugins.cmake
 *.iml
 .metadata
 .qodo/
+
+# ARTEMIS E2E run artifacts (trace IDs and timing summaries)
+e2e_test/artifacts/
+e2e_test/.venv/
+
+# ARTEMIS E2E run artifacts (trace IDs and timing summaries)
+e2e_test/artifacts/
