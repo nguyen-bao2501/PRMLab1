@@ -7,8 +7,8 @@ class AuthViewModel extends ChangeNotifier {
   AuthViewModel({
     required FirebaseAuthService authService,
     required FirebaseAnalyticsService analyticsService,
-  })  : _authService = authService,
-        _analyticsService = analyticsService;
+  }) : _authService = authService,
+       _analyticsService = analyticsService;
 
   final FirebaseAuthService _authService;
   final FirebaseAnalyticsService _analyticsService;
@@ -50,6 +50,28 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Đăng nhập không thành công: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> signInWithDev({
+    required String email,
+    required String role,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final user = await _authService.signInWithDev(email: email, role: role);
+      await _analyticsService.setUserId(user.uid);
+      await _analyticsService.logLogin(method: 'debug_dev');
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Đăng nhập thử nghiệm không thành công: $e';
       notifyListeners();
       return false;
     }

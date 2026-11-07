@@ -202,10 +202,13 @@ class _ImportSheetScreenState extends State<ImportSheetScreen> {
             style: AppTypography.labelMedium.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 6),
-          TextField(
-            controller: _urlController,
-            onChanged: (val) => vm.setSheetUrl(val),
-            decoration: InputDecoration(
+          Semantics(
+            textField: true,
+            label: 'Đường dẫn hoặc ID Google Sheet',
+            child: TextField(
+              controller: _urlController,
+              onChanged: (val) => vm.setSheetUrl(val),
+              decoration: InputDecoration(
               hintText: 'https://docs.google.com/spreadsheets/d/...',
               suffixIcon: _urlController.text.isNotEmpty
                   ? IconButton(
@@ -216,6 +219,7 @@ class _ImportSheetScreenState extends State<ImportSheetScreen> {
                       },
                     )
                   : null,
+              ),
             ),
           ),
           const SizedBox(height: 16),

@@ -21,9 +21,13 @@ class PrimaryGoldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: ElevatedButton(
+    return Semantics(
+      button: true,
+      enabled: !isLoading && onPressed != null,
+      label: text,
+      child: SizedBox(
+        height: height,
+        child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentGold,
           foregroundColor: Colors.white,
@@ -61,6 +65,7 @@ class PrimaryGoldButton extends StatelessWidget {
                   ),
                 ],
               ),
+        ),
       ),
     );
   }
@@ -86,9 +91,13 @@ class SecondaryOutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: OutlinedButton(
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: text,
+      child: SizedBox(
+        height: height,
+        child: OutlinedButton(
         style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: textColor,
@@ -116,6 +125,7 @@ class SecondaryOutlineButton extends StatelessWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -137,9 +147,13 @@ class DangerActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: ElevatedButton(
+    return Semantics(
+      button: true,
+      enabled: !isLoading && onPressed != null,
+      label: text,
+      child: SizedBox(
+        height: 52,
+        child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.dangerRed,
           foregroundColor: Colors.white,
@@ -174,6 +188,7 @@ class DangerActionButton extends StatelessWidget {
                   ),
                 ],
               ),
+        ),
       ),
     );
   }

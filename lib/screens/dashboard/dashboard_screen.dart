@@ -154,6 +154,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           height: 42,
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
+                              // theme đặt minimumSize rộng vô hạn → vỡ layout trong Row
+                              minimumSize: const Size(0, 42),
                               backgroundColor: Colors.white,
                               side: const BorderSide(color: AppColors.borderCard),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

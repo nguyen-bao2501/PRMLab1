@@ -25,6 +25,25 @@ class ClassDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ClassViewModel>();
+    final absentStudents = vm.topAbsentStudents;
+    final bannedStudents = absentStudents
+        .where((student) => student.absentCount > 4)
+        .toList();
+    final concerningStudents = absentStudents
+        .where((student) => student.absentCount >= 3 && student.absentCount <= 4)
+        .toList();
+    final totalAbsences = absentStudents.fold<int>(
+      0,
+      (total, student) => total + student.absentCount,
+    );
+    final completedSessions = absentStudents.isEmpty
+        ? 0
+        : absentStudents.map((student) => student.totalSessions).reduce(
+              (value, element) => value > element ? value : element,
+            );
+    final absenceRate = classItem.studentCount == 0 || completedSessions == 0
+        ? 0.0
+        : totalAbsences / (classItem.studentCount * completedSessions) * 100;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -301,6 +320,43 @@ class ClassDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppDimens.space24),
 
+            // Section: Quản lý chuyên cần
+            Text(
+              'Quản lý chuyên cần',
+              style: AppTypography.titleLarge.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Theo dõi sĩ số và cảnh báo điều kiện dự thi.',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+            ),
+            const SizedBox(height: AppDimens.space12),
+            Row(
+              children: [
+                _buildAttendanceMetric(
+                  icon: Icons.groups_outlined,
+                  label: 'Thành viên',
+                  value: '${classItem.studentCount}',
+                  color: AppColors.textPrimary,
+                ),
+                const SizedBox(width: 8),
+                _buildAttendanceMetric(
+                  icon: Icons.warning_amber_rounded,
+                  label: 'Cần lưu ý',
+                  value: '${concerningStudents.length}',
+                  color: const Color(0xFFD97706),
+                ),
+                const SizedBox(width: 8),
+                _buildAttendanceMetric(
+                  icon: Icons.block_outlined,
+                  label: 'Cấm thi',
+                  value: '${bannedStudents.length}',
+                  color: const Color(0xFFDC2626),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimens.space24),
+
             // Section: Tổng quan khóa học
             Container(
               padding: const EdgeInsets.all(AppDimens.space16),
@@ -333,7 +389,7 @@ class ClassDetailScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('TỶ LỆ VẮNG', style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted)),
-                                Text('4,0%', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900, fontSize: 24)),
+                                Text('${absenceRate.toStringAsFixed(1)}%', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900, fontSize: 24)),
                               ],
                             ),
                             Container(
@@ -342,9 +398,9 @@ class ClassDetailScreen extends StatelessWidget {
                                 color: const Color(0xFFFEF3C7),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
-                                '7 / 175 lượt vắng',
-                                style: TextStyle(color: Color(0xFFB45309), fontSize: 12, fontWeight: FontWeight.bold),
+                              child: Text(
+                                '$totalAbsences / ${classItem.studentCount * completedSessions} lượt vắng',
+                                style: const TextStyle(color: Color(0xFFB45309), fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -364,15 +420,22 @@ class ClassDetailScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Sinh viên vắng nhiều nhất', style: AppTypography.labelLarge),
-                      Text('(Tổng cộng 7 lượt)', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                      Text('(Tổng cộng $totalAbsences lượt)', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 10),
 
-                  _buildAbsentStudentRow('Nguyễn Văn An', 'SE190901', '3/5 tiết (60%)', const Color(0xFFFEE2E2), const Color(0xFFDC2626)),
-                  _buildAbsentStudentRow('Trần Minh Bình', 'SE190902', '2/5 tiết (40%)', const Color(0xFFFEF3C7), const Color(0xFFD97706)),
-                  _buildAbsentStudentRow('Lê Ngọc Chi', 'SE190903', '1/5 tiết (20%)', const Color(0xFFF3F4F6), const Color(0xFF6B7280)),
-                  _buildAbsentStudentRow('Phạm Gia Duy', 'SE190904', '1/5 tiết (20%)', const Color(0xFFF3F4F6), const Color(0xFF6B7280)),
+                  if (absentStudents.isEmpty)
+                    Text('Chưa có dữ liệu điểm danh đã hoàn tất.', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted))
+                  else
+                    ...absentStudents.map(_buildAbsentStudentRow),
+                  if (bannedStudents.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sinh viên vắng quá 4 buổi được gắn trạng thái cấm thi.',
+                      style: AppTypography.bodySmall.copyWith(color: const Color(0xFFDC2626)),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -443,7 +506,49 @@ class ClassDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAbsentStudentRow(String name, String mssv, String badgeText, Color bg, Color fg) {
+  Widget _buildAttendanceMetric({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
+          border: Border.all(color: AppColors.borderCard),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(height: 8),
+            Text(value, style: AppTypography.titleLarge.copyWith(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.textMuted)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAbsentStudentRow(AbsentSummaryItem student) {
+    final isBanned = student.absentCount > 4;
+    final isWarning = student.absentCount >= 3;
+    final bg = isBanned
+        ? const Color(0xFFFEE2E2)
+        : isWarning
+            ? const Color(0xFFFEF3C7)
+            : const Color(0xFFF3F4F6);
+    final fg = isBanned
+        ? const Color(0xFFDC2626)
+        : isWarning
+            ? const Color(0xFFD97706)
+            : const Color(0xFF6B7280);
+    final badgeText = isBanned
+        ? 'Cấm thi · vắng ${student.absentCount} buổi'
+        : 'Vắng ${student.absentCount}/${student.totalSessions} buổi (${student.percent.toStringAsFixed(0)}%)';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -457,8 +562,8 @@ class ClassDetailScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, style: AppTypography.labelLarge.copyWith(fontSize: 13)),
-              Text(mssv, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+              Text(student.name, style: AppTypography.labelLarge.copyWith(fontSize: 13)),
+              Text(student.studentId, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
             ],
           ),
           Container(

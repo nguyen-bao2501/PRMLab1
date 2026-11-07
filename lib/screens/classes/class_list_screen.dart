@@ -92,10 +92,13 @@ class _ClassListScreenState extends State<ClassListScreen> {
               const SizedBox(height: AppDimens.space16),
 
               // Search & Filter
-              TextField(
-                controller: _searchController,
-                onChanged: (val) => vm.searchClasses(val),
-                decoration: InputDecoration(
+              Semantics(
+                textField: true,
+                label: 'Tìm lớp học',
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => vm.searchClasses(val),
+                  decoration: InputDecoration(
                   hintText: 'Tìm mã lớp, mã môn, học kỳ...',
                   prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
                   suffixIcon: _searchController.text.isNotEmpty
@@ -107,6 +110,7 @@ class _ClassListScreenState extends State<ClassListScreen> {
                           },
                         )
                       : null,
+                  ),
                 ),
               ),
               const SizedBox(height: AppDimens.space10),

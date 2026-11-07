@@ -83,3 +83,103 @@ ARTEMIS **Pro** trên môi trường kiểm thử riêng. Ghi ngày, thiết b�
 trace, màn hình/luồng đã khám phá, từng vấn đề phát hiện (hoặc ghi rõ không phát
 hiện vấn đề), các bước tái hiện, mức độ nghiêm trọng và hướng xử lý. Phiên khám phá
 không thay thế các bài kiểm thử hồi quy bằng Flash ở trên.
+
+### Trạng thái xác minh trước khi chạy thực tế — 06/11/2026
+
+Đợt thử ban đầu với trace `9ee0c772-e3a1-4a71-89ab-c4df073185d5` bị dừng trước khi
+mở app. Sau đó Flutter SDK sạch đã được dùng để build APK debug, `uv` environment
+được tái tạo và APK `com.example.prm` đã được cài lên `emulator-5554`. Phần báo cáo
+ngay sau đây thay thế trạng thái bị chặn của đợt thử ban đầu bằng bằng chứng chạy
+thực tế trên thiết bị.
+
+## Báo cáo thực thi ARTEMIS — 06/11/2026
+
+### Môi trường và bằng chứng
+
+- Thiết bị: Android Emulator `Pixel_6`, serial `emulator-5554`, Android 14.
+- Ứng dụng: `com.example.prm`, APK debug được build và cài lại trước khi chạy.
+- ARTEMIS: helper accessibility và device probe hoạt động; regression dùng Flash,
+  exploratory dùng Pro.
+- Lệnh chuẩn để chạy lại suite: `Set-Location e2e_test; uv run pytest --count=3 --junitxml=artifacts/junit.xml`.
+- Trace/screenshot/replay được ARTEMIS lưu dưới `D:\PRM323\artemis\traces\<trace-id>`.
+
+### Regression đã chạy 3 lần: smoke tiền đăng nhập
+
+Chỉ ca dưới đây được tính pass rate vì không cần tài khoản Google hoặc dữ liệu backend.
+Mỗi lượt buộc app về màn hình Login, yêu cầu ARTEMIS trả JSON quan sát và kiểm tra ba
+giá trị `screen`, `title_visible`, `button_accessibility_label`; không chỉ dựa vào
+trạng thái `SUCCESS`.
+
+| ID | Ca kiểm thử / giá trị quan sát | Trace hợp lệ | Thời gian | Kết quả |
+|---|---|---|---:|---|
+| TC-SMOKE-01 / run 1 | Login; `Đăng nhập`; label `Đăng nhập bằng Google` | `3e76ee84-9e3e-42a1-916c-afb9ee617a6b` | 30.4s | Pass |
+| TC-SMOKE-01 / run 2 | Login; `Đăng nhập`; label `Đăng nhập bằng Google` | `b8b54bca-23f4-44ec-8ce6-37b6901e5456` | 27.2s | Pass |
+| TC-SMOKE-01 / run 3 | Login; `Đăng nhập`; label `Đăng nhập bằng Google` | `d4a9710f-e90b-49ef-9e86-7d0f22b24088` | 25.1s | Pass |
+
+**Pass rate:** 3/3 (100%); **thời gian trung bình:** 27.6s. Kết quả JSON của mỗi
+trace là `{"observed":{"screen":"Login","title_visible":true,
+"google_sign_in_button_visible":true,"button_accessibility_label":"Đăng nhập bằng Google"}}`.
+
+Lượt `08bbcd68-4df1-4417-ab98-c7c108884eee` không được đưa vào tỷ lệ vì emulator
+đã tắt sau phiên Pro (ARTEMIS chẩn đoán: ADB không còn liệt kê `emulator-5554`). Đây
+là gián đoạn hạ tầng, không phải kết quả app; emulator được boot lại, APK được cài
+lại và ba lượt hợp lệ ở trên mới được tính.
+
+### Phiên khám phá Pro
+
+- Trace: `e27c515a-9980-47f1-bb8f-4e89ef5ea7c3`.
+- Thời lượng được ARTEMIS ghi nhận: **15 phút 01 giây** (901 giây), 11 vòng khám phá.
+- Phạm vi đã kiểm thử: splash/login, dialog quyền notification Android, gọi và hủy
+  Google Sign-In gốc, back/home/recents/cold restore, landscape, offline/recovery,
+  font scale 1.5, dark/light mode, debounce double-tap, keyboard/D-pad và display zoom.
+- Ổn định: không có crash/ANR trong phiên; app khôi phục về Login sau `am kill`.
+- Giới hạn: không nhập/chọn tài khoản Google thử nghiệm nên các TC sau đăng nhập
+  (lớp học, lịch, điểm danh, báo cáo/export, Remote Config và analytics) vẫn **chưa
+  chạy**, không được tính đạt.
+
+| Vấn đề | Mức độ | Bước tái hiện ngắn | Kết quả quan sát / xử lý đề nghị |
+|---|---|---|---|
+| Font scale 1.5 gây RenderFlex overflow | Medium | Đặt `font_scale=1.5`, mở Login | Footer overflow 57px; dùng `Flexible`/`Expanded` và cho Text wrap. |
+| Cắt layout ở landscape | Medium | Xoay Login ngang | Footer/divider bị cắt; bảo đảm scroll/fit cho viewport ngang. |
+| Lỗi mạng bị báo là người dùng hủy | Low | Tắt Wi-Fi/data, bấm Google login, quay lại | Snackbar báo hủy; phân biệt lỗi mạng để hướng dẫn retry. |
+| Logo thiếu content description | Low | Kiểm tra accessibility tree | Thêm semantic label `Logo FPT Education`. |
+| Nhãn FPT UNIVERSITY hiển thị trùng | Low | Mở Login | Giữ một brand label thống nhất. |
+
+Kết quả chi tiết do Pro tạo: `D:\PRM323\artemis\traces\e27c515a-9980-47f1-bb8f-4e89ef5ea7c3\notes\output.md`.
+Trước khi nộp, cần thêm dedicated Google test account và synthetic Firebase/backend
+fixture, rồi chạy đủ TC-01…TC-18 ba lần và cập nhật bảng này bằng JUnit/trace thực tế.
+
+### Xác thực tài khoản vai trò backend — 06/11/2026
+
+Hai tài khoản test được xác thực qua `POST /v1/dev/login`. Với access token chỉ giữ
+trong bộ nhớ của phiên chạy, `GET /v1/auth/me` trả đúng email và role cho cả hai
+trường hợp: `TEACHER` và `STUDENT` (2/2 pass). Token và thông tin đăng nhập không
+được ghi vào repository hay báo cáo.
+
+Đây là kiểm tra precondition của backend, không phải kết quả E2E ARTEMIS. Luồng
+dev-login đã được thêm cho bản Flutter **debug**: chỉ khi `kDebugMode`, Login hiển thị
+`Email kiểm thử`, `Vai trò kiểm thử` và `Đăng nhập thử nghiệm`; token chỉ được giữ
+trong bộ nhớ và bị xóa khi sign-out. Bản release không có luồng này.
+
+Hai test độc lập `TC19` (Teacher) và `TC20` (Student) được thêm vào
+`e2e_test/test_auth.py`; email lấy từ biến môi trường
+`ARTEMIS_TEST_TEACHER_EMAIL` / `ARTEMIS_TEST_STUDENT_EMAIL`, không được lưu vào repo.
+`uv run pytest --collect-only -q` đã thu thập thành công **20** test.
+
+### Lần chạy role UI bị hạ tầng chặn — 06/11/2026
+
+ARTEMIS đã xác minh accessibility tree của panel debug qua trace
+`d2bf23bf-21bb-4882-8498-b94a75288469`: panel, nhãn email, selector role và submit
+button đều hiện đúng. Hai lần sau (`4b6ae1cd-2db5-472c-9c46-2156c42f51c8`,
+`8b4d6610-59a3-492b-bc10-7ecf63e00618`) và lần retry
+`4943db01-a3dc-4e05-8584-01fa29ed6201` không được tính pass/fail: emulator tự biến
+mất khỏi ADB khi ARTEMIS đang chạy (screenshot trống/hierarchy rỗng). ARTEMIS diagnosis
+đã khởi động lại ADB, reboot Pixel_6, reset UIAutomator và device probe từng trở về
+`ready`, nhưng lỗi lặp lại ở lần chạy UI kế tiếp. Do vậy **TC19/TC20 chưa có pass rate**;
+không được ghi nhận là đạt cho tới khi emulator ổn định và mỗi ca chạy 3/3 lần.
+
+Lần thử lại sau khi thiết bị được báo sẵn sàng (trace
+`36ce408c-8438-4254-be76-ba31cc18527d`) cũng không được tính: Android hiển thị
+`System UI isn't responding`, sau đó splash của app đứng ở màn hình xanh. ARTEMIS đã
+cho phép notification và launch lại app nhưng không thể đến Login. Đây là ANR của
+emulator/System UI trước bước xác thực ứng dụng, không phải pass/fail của TC19.

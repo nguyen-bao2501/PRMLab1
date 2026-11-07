@@ -16,10 +16,19 @@ class CreateScheduleScreen extends StatefulWidget {
 }
 
 class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
-  final TextEditingController _dateController = TextEditingController(text: '05/10/2026');
+  late final TextEditingController _dateController;
   final TextEditingController _roomController = TextEditingController(text: 'A101');
   int _selectedSlot = 1;
   String _selectedSlotRange = 'Slot 1 · 07:00–09:15';
+
+  @override
+  void initState() {
+    super.initState();
+    final initialDate = DateTime.now().add(const Duration(days: 7));
+    _dateController = TextEditingController(
+      text: '${initialDate.day.toString().padLeft(2, '0')}/${initialDate.month.toString().padLeft(2, '0')}/${initialDate.year}',
+    );
+  }
 
   @override
   void dispose() {
@@ -103,16 +112,20 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
             // Form Field 2: Ngày học
             Text('NGÀY HỌC *', style: AppTypography.labelSmall.copyWith(color: AppColors.textPrimary)),
             const SizedBox(height: 6),
-            TextField(
-              controller: _dateController,
-              decoration: InputDecoration(
+            Semantics(
+              textField: true,
+              label: 'Ngày học, định dạng ngày tháng năm',
+              child: TextField(
+                controller: _dateController,
+                decoration: InputDecoration(
+                  labelText: 'Ngày học (dd/MM/yyyy)',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_today_outlined, size: 18),
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: DateTime(2026, 10, 5),
-                      firstDate: DateTime(2026, 1, 1),
+                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      firstDate: DateTime.now(),
                       lastDate: DateTime(2027, 12, 31),
                     );
                     if (picked != null) {
@@ -121,6 +134,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                       });
                     }
                   },
+                ),
                 ),
               ),
             ),
@@ -198,10 +212,15 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
             // Form Field 4: Phòng học
             Text('PHÒNG HỌC *', style: AppTypography.labelSmall.copyWith(color: AppColors.textPrimary)),
             const SizedBox(height: 6),
-            TextField(
-              controller: _roomController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.location_on_outlined, size: 18),
+            Semantics(
+              textField: true,
+              label: 'Phòng học',
+              child: TextField(
+                controller: _roomController,
+                decoration: const InputDecoration(
+                  labelText: 'Phòng học',
+                  prefixIcon: Icon(Icons.location_on_outlined, size: 18),
+                ),
               ),
             ),
             const SizedBox(height: AppDimens.space20),
@@ -288,6 +307,15 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
               text: 'Lưu lịch học',
               icon: const Icon(Icons.save_outlined, size: 18),
               onPressed: () async {
+                final date = _parseDate(_dateController.text);
+                final today = DateTime.now();
+                final startOfToday = DateTime(today.year, today.month, today.day);
+                if (date == null || date.isBefore(startOfToday)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Ngày học không hợp lệ. Hãy chọn hôm nay hoặc một ngày trong tương lai.')),
+                  );
+                  return;
+                }
                 final success = await scheduleVm.createNewSessionSchedule(
                   classItem: const ClassModel(
                     id: 'c1',
@@ -297,7 +325,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                     studentCount: 35,
                     sessionCount: 8,
                   ),
-                  date: DateTime(2026, 10, 5),
+                  date: date,
                   slot: _selectedSlot,
                   timeRange: _selectedSlotRange,
                   room: _roomController.text,
@@ -324,5 +352,16 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
         ),
       ),
     );
+  }
+
+  DateTime? _parseDate(String input) {
+    final parts = input.trim().split('/');
+    if (parts.length != 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    final parsed = DateTime(year, month, day);
+    return parsed.year == year && parsed.month == month && parsed.day == day ? parsed : null;
   }
 }

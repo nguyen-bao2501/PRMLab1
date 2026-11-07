@@ -34,7 +34,12 @@ void main() async {
   try {
     await Firebase.initializeApp();
     if (Firebase.apps.isNotEmpty) {
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      FlutterError.onError = (details) {
+        FlutterError.presentError(
+          details,
+        ); // vẫn in lỗi ra console / màn đỏ khi debug
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      };
       PlatformDispatcher.instance.onError = (error, stack) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
@@ -48,7 +53,7 @@ void main() async {
   final apiService = ApiService();
   final classRepository = AppClassRepository(apiService: apiService);
 
-  final authService = FirebaseAuthService();
+  final authService = FirebaseAuthService(apiService: apiService);
   final storageService = FirebaseStorageService();
   final notificationService = FirebaseNotificationService();
   final analyticsService = FirebaseAnalyticsService();
@@ -141,7 +146,9 @@ class PRMApp extends StatelessWidget {
       title: 'FPT University • Điểm danh',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: authVm.isAuthenticated ? const DashboardScreen() : const LoginScreen(),
+      home: authVm.isAuthenticated
+          ? const DashboardScreen()
+          : const LoginScreen(),
     );
   }
 }
