@@ -23,6 +23,9 @@ class ClassViewModel extends ChangeNotifier {
   List<AbsentSummaryItem> _topAbsentStudents = [];
   List<AbsentSummaryItem> get topAbsentStudents => _topAbsentStudents;
 
+  String? _detailError;
+  String? get detailError => _detailError;
+
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
@@ -72,13 +75,17 @@ class ClassViewModel extends ChangeNotifier {
 
   Future<void> selectClass(ClassModel classItem) async {
     _selectedClass = classItem;
+    _topAbsentStudents = [];
+    _detailError = null;
     await _analyticsService.logViewClassDetail(
       classId: classItem.id,
       subjectCode: classItem.subjectCode,
     );
     try {
       _topAbsentStudents = await _repository.getTopAbsentStudents(classItem.id);
-    } catch (_) {}
+    } catch (_) {
+      _detailError = 'Không thể tải danh sách sinh viên vắng nhiều.';
+    }
     notifyListeners();
   }
 
