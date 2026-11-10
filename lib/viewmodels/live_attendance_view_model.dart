@@ -63,9 +63,14 @@ class LiveAttendanceViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadStudentList() async {
-    if (_currentSession == null) return;
+    final session = _currentSession;
+    if (session == null) return;
     try {
-      _allStudents = await _repository.getLiveAttendance(_currentSession!.id);
+      final students = await _repository.getLiveAttendance(session.id);
+      // A previous screen can finish loading after another session is opened.
+      // Do not let that stale response replace the current session's roster.
+      if (_currentSession?.id != session.id) return;
+      _allStudents = students;
       notifyListeners();
     } catch (e, stack) {
       await _crashlyticsService.recordNonFatalError(e, stack, reason: 'Failed to load live attendance');
