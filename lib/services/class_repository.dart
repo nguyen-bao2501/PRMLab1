@@ -176,8 +176,14 @@ class AppClassRepository implements ClassRepository {
     }
 
     var list = List<ClassModel>.from(_cachedClasses);
+    if (semester != null && semester.trim().isNotEmpty) {
+      final normalizedSemester = semester.trim().toLowerCase();
+      list = list
+          .where((c) => c.semester.toLowerCase() == normalizedSemester)
+          .toList();
+    }
     if (query != null && query.trim().isNotEmpty) {
-      final q = query.toLowerCase();
+      final q = query.trim().toLowerCase();
       list = list.where((c) =>
         c.subjectCode.toLowerCase().contains(q) ||
         c.className.toLowerCase().contains(q) ||
