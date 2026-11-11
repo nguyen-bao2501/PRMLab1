@@ -55,26 +55,28 @@ public class AuthService {
                 throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT,
                         "Email của tài khoản Google không khớp với tài khoản đã liên kết");
             }
-            if (u.getGoogleId() != null && !googleId.equals(u.getGoogleId())) {
+            if (u.getGoogleId() != null && !u.getGoogleId().startsWith("pending_") && !googleId.equals(u.getGoogleId())) {
                 throw new ApiException(ErrorCode.INVALID_GOOGLE_ACCOUNT,
                         "Email này đã liên kết với một tài khoản Google khác");
             }
-            // Cập nhật googleId + avatar nếu chưa có
-            if (u.getGoogleId() == null) u.setGoogleId(googleId);
-            if (u.getAvatarUrl() == null) u.setAvatarUrl(picture);
-            if (u.getFullName() == null) u.setFullName(name);
+            // Cập nhật googleId + avatar nếu chưa có (hoặc đang dùng ID tạm)
+            if (u.getGoogleId() == null || u.getGoogleId().startsWith("pending_")) {
+                u.setGoogleId(googleId);
+            }
+            if (picture != null) u.setAvatarUrl(picture);
+            if (name != null) u.setFullName(name);
             return userRepository.save(u);
         }).orElseGet(() -> {
             // Tạo user mới (chưa có trong hệ thống)
             log.info("Tạo user mới: {} - {}", normalizedEmail, name);
-            // User này chưa nằm trong roster. Có thể là giáo viên/admin đã được
-            // tạo sẵn; học sinh sẽ bị chặn ở check-in nếu email không có trong lớp.
+            // Ứng dụng giảng viên cho phép tự đăng ký bằng Google,
+            // không cần tạo email qua dev login trước.
             return userRepository.save(User.builder()
                     .googleId(googleId)
                     .email(normalizedEmail)
                     .fullName(name)
                     .avatarUrl(picture)
-                    .role(User.Role.STUDENT)
+                    .role(User.Role.TEACHER)
                     .isActive(true)
                     .build());
         });

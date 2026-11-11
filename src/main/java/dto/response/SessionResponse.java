@@ -16,6 +16,7 @@ public class SessionResponse {
     private String room;
     private String status;
     private String qrToken;
+    private String qrUrl;
     private Instant qrExpiresAt;
     private Long totalStudents;
     private Long checkedIn;

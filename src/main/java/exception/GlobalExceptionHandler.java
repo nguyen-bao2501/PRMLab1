@@ -52,6 +52,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", e);
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getStatus())
                 .body(ApiResponse.error(ErrorCode.INTERNAL_ERROR.getMessage(),
-                        Map.of("detail", e.getMessage())));
+                        Map.of("detail", e.getClass().getSimpleName() + ": " + e.getMessage())));
     }
 }

@@ -14,7 +14,7 @@ public class ClassRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "class_code", unique = true, nullable = false)
+    @Column(name = "class_code", nullable = false)
     private String classCode;
 
     @Column(name = "subject_code")

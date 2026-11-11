@@ -1,122 +1,231 @@
+import 'dart:ui';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'firebase/firebase_analytics_service.dart';
+import 'firebase/firebase_auth_service.dart';
+import 'firebase/firebase_crashlytics_service.dart';
+import 'firebase/firebase_notification_service.dart';
+import 'firebase/firebase_remote_config_service.dart';
+import 'firebase/firebase_storage_service.dart';
+import 'models/app_models.dart';
+import 'mobile/screens/mobile_main_screen.dart';
+import 'mobile/services/mobile_auth_service.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/dashboard/dashboard_screen.dart';
+import 'services/api_service.dart';
+import 'services/class_repository.dart';
+import 'theme/app_theme.dart';
+import 'viewmodels/auth_view_model.dart';
+import 'viewmodels/class_view_model.dart';
+import 'viewmodels/dashboard_view_model.dart';
+import 'viewmodels/firebase_demo_view_model.dart';
+import 'viewmodels/live_attendance_view_model.dart';
+import 'viewmodels/report_view_model.dart';
+import 'viewmodels/schedule_view_model.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+const fptOrange = Color(0xFFF37021);
+const ink = Color(0xFF3A504E);
+const muted = Color(0xFF8B9D9B);
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  // Initialize Firebase (safely with try-catch so it won't crash if google-services.json is pending)
+  try {
+    await Firebase.initializeApp();
+    if (Firebase.apps.isNotEmpty) {
+      FlutterError.onError = (details) {
+        FlutterError.presentError(
+          details,
+        ); // vẫn in lỗi ra console / màn đỏ khi debug
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    }
+  } catch (e) {
+    debugPrint('Firebase.initializeApp() note: $e');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+  // Initialize Core Services
+  final apiService = ApiService();
+  final classRepository = AppClassRepository(apiService: apiService);
+
+  final authService = FirebaseAuthService(apiService: apiService);
+  final storageService = FirebaseStorageService();
+  final notificationService = FirebaseNotificationService();
+  final analyticsService = FirebaseAnalyticsService();
+  final crashlyticsService = FirebaseCrashlyticsService();
+  final remoteConfigService = FirebaseRemoteConfigService();
+
+  // Pre-initialize Firebase background/config services
+  await authService.initialize();
+  await remoteConfigService.initialize();
+  await notificationService.initialize();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Services Injection
+        Provider<ApiService>.value(value: apiService),
+        Provider<ClassRepository>.value(value: classRepository),
+        Provider<FirebaseAuthService>.value(value: authService),
+        Provider<FirebaseStorageService>.value(value: storageService),
+        Provider<FirebaseNotificationService>.value(value: notificationService),
+        Provider<FirebaseAnalyticsService>.value(value: analyticsService),
+        Provider<FirebaseCrashlyticsService>.value(value: crashlyticsService),
+        Provider<FirebaseRemoteConfigService>.value(value: remoteConfigService),
+
+        // ViewModels Injection
+        ChangeNotifierProvider(
+          create: (_) => AuthViewModel(
+            authService: authService,
+            analyticsService: analyticsService,
+          )..init(),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+        ChangeNotifierProvider(
+          create: (_) => DashboardViewModel(
+            repository: classRepository,
+            remoteConfigService: remoteConfigService,
+            analyticsService: analyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ClassViewModel(
+            repository: classRepository,
+            analyticsService: analyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ScheduleViewModel(
+            repository: classRepository,
+            analyticsService: analyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => LiveAttendanceViewModel(
+            repository: classRepository,
+            analyticsService: analyticsService,
+            crashlyticsService: crashlyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReportViewModel(
+            repository: classRepository,
+            storageService: storageService,
+            authService: authService,
+            analyticsService: analyticsService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FirebaseDemoViewModel(
+            authService: authService,
+            storageService: storageService,
+            notificationService: notificationService,
+            analyticsService: analyticsService,
+            crashlyticsService: crashlyticsService,
+            remoteConfigService: remoteConfigService,
+          ),
+        ),
+      ],
+      child: const PRMApp(),
+    ),
+  );
+}
+
+class PRMApp extends StatelessWidget {
+  const PRMApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authVm = context.watch<AuthViewModel>();
+
+    Widget home;
+    if (!authVm.isAuthenticated) {
+      home = const LoginScreen();
+    } else if (authVm.currentUser?.role == 'STUDENT') {
+      home = StudentAppWrapper(
+        user: authVm.currentUser!,
+        apiService: context.read<ApiService>(),
+        onLoggedOut: () => authVm.signOut(),
+      );
+    } else {
+      home = const DashboardScreen();
+    }
+
+    return MaterialApp(
+      title: 'FPT University • Điểm danh',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: home,
     );
   }
+}
+
+class StudentAppWrapper extends StatefulWidget {
+  const StudentAppWrapper({
+    super.key,
+    required this.user,
+    required this.apiService,
+    required this.onLoggedOut,
+  });
+
+  final UserModel user;
+  final ApiService apiService;
+  final VoidCallback onLoggedOut;
+
+  @override
+  State<StudentAppWrapper> createState() => _StudentAppWrapperState();
+}
+
+class _StudentAppWrapperState extends State<StudentAppWrapper> {
+  late final MobileAuthService _mobileAuthService;
+
+  @override
+  void initState() {
+    super.initState();
+    _mobileAuthService = MobileAuthService(apiService: widget.apiService);
+    _syncUser();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentAppWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user != widget.user) {
+      _syncUser();
+    }
+  }
+
+  void _syncUser() {
+    _mobileAuthService.syncFromUser(
+      token: widget.apiService.token,
+      email: widget.user.email,
+      fullName: widget.user.displayName,
+      role: widget.user.role,
+      studentCode: widget.user.studentCode,
+      avatarUrl: widget.user.photoUrl,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MobileMainScreen(
+      authService: _mobileAuthService,
+      onLoggedOut: widget.onLoggedOut,
+    );
+  }
+}
+
+class AttendanceApp extends StatelessWidget {
+  const AttendanceApp({super.key, this.store, this.googleSignIn});
+  final dynamic store;
+  final dynamic googleSignIn;
+
+  @override
+  Widget build(BuildContext context) => const PRMApp();
 }

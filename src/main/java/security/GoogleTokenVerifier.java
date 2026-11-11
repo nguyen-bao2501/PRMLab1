@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -16,10 +16,13 @@ public class GoogleTokenVerifier {
 
     private final GoogleIdTokenVerifier verifier;
 
-    public GoogleTokenVerifier(@Value("${app.google.client-id}") String clientId) {
+    public GoogleTokenVerifier(@Value("${app.google.client-id}") String clientId,
+            @Value("${app.google.web-client-id:}") String webClientId) {
+        log.info("Google OAuth configured for client ID: {}", clientId);
         this.verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(Collections.singletonList(clientId))
+                .setAudience(Stream.of(clientId, webClientId).map(String::trim)
+                        .filter(id -> !id.isEmpty()).distinct().toList())
                 .build();
     }
 

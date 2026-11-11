@@ -19,7 +19,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "full_name")
+    @Column(name = "full_name", columnDefinition = "nvarchar(255)")
     private String fullName;
 
     @Column(name = "avatar_url")
@@ -33,6 +33,7 @@ public class User {
     private Role role;
 
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "created_at", updatable = false)

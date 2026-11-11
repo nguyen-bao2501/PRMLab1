@@ -1,7 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <!--
+<!doctype html>
+<html lang="vi">
+  <head>
+    <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
@@ -14,26 +14,75 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="$FLUTTER_BASE_HREF">
+    <base href="$FLUTTER_BASE_HREF" />
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="description"
+      content="Campus Studio — không gian quản lý lớp học và điểm danh FPT University."
+    />
+    <meta name="theme-color" content="#173d35" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="prm">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <!-- iOS meta tags & icons -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Campus Studio" />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
 
-  <title>prm</title>
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
-  <!--
+    <title>Campus Studio · FPT University</title>
+    <link rel="manifest" href="manifest.json" />
+  </head>
+  <body>
+    <style>
+      body {
+        margin: 0;
+        background: #f5f4ec;
+      }
+      #studio-loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        color: #173d35;
+        font:
+          14px "Segoe UI",
+          sans-serif;
+      }
+      #studio-loading strong {
+        font-size: 24px;
+        letter-spacing: 3px;
+      }
+      #studio-loading p {
+        color: #626f65;
+        font-size: 12px;
+        margin-top: 18px;
+      }
+      #studio-loading span {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 22px;
+        border-radius: 14px;
+        background: #dceaa5;
+        font-size: 28px;
+      }
+    </style>
+    <div id="studio-loading" role="status">
+      <span aria-hidden="true">✳</span><strong>CAMPUS / STUDIO</strong>
+      <p>Đang mở không gian lớp học…</p>
+    </div>
+    <script>
+      window.addEventListener("flutter-first-frame", function () {
+        document.getElementById("studio-loading")?.remove();
+      });
+    </script>
+    <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
     or to give the user feedback during the initialization process.
@@ -41,6 +90,6 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
-</body>
+    <script src="flutter_bootstrap.js" async></script>
+  </body>
 </html>
