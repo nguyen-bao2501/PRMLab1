@@ -72,25 +72,67 @@ class FirebaseAuthService {
         );
         final fbUser = userCredential.user;
 
-        _currentUser = UserModel(
-          uid: fbUser?.uid ?? googleAccount.id,
-          email: fbUser?.email ?? googleAccount.email,
-          displayName:
-              fbUser?.displayName ??
-              googleAccount.displayName ??
-              'Giảng viên FPT',
-          photoUrl: fbUser?.photoURL ?? googleAccount.photoUrl,
-          role: 'LECTURER',
-        );
+        // Đồng bộ với backend để lấy role thực tế (STUDENT vs TEACHER) và token
+        Map<String, dynamic>? backendUserData;
+        if (_apiService != null && googleAuth.idToken != null) {
+          try {
+            final res = await _apiService.googleLogin(googleAuth.idToken!);
+            final token = res['accessToken']?.toString() ?? res['token']?.toString();
+            if (token != null && token.isNotEmpty) {
+              _apiService.token = token;
+            }
+            if (res['user'] is Map) {
+              backendUserData = Map<String, dynamic>.from(res['user'] as Map);
+            }
+          } catch (e) {
+            debugPrint('Backend sync error in signInWithGoogle: $e');
+          }
+        }
+
+        if (backendUserData != null) {
+          _currentUser = UserModel.fromJson(backendUserData);
+        } else {
+          _currentUser = UserModel(
+            uid: fbUser?.uid ?? googleAccount.id,
+            email: fbUser?.email ?? googleAccount.email,
+            displayName:
+                fbUser?.displayName ??
+                googleAccount.displayName ??
+                'Người dùng FPT',
+            photoUrl: fbUser?.photoURL ?? googleAccount.photoUrl,
+            role: 'LECTURER',
+          );
+        }
       } else {
         // Fallback for local testing if Firebase is not linked
-        _currentUser = UserModel(
-          uid: googleAccount.id,
-          email: googleAccount.email,
-          displayName: googleAccount.displayName ?? 'Giảng viên FPT',
-          photoUrl: googleAccount.photoUrl,
-          role: 'LECTURER',
-        );
+        Map<String, dynamic>? backendUserData;
+        try {
+          final googleAuth = await googleAccount.authentication;
+          if (_apiService != null && googleAuth.idToken != null) {
+            final res = await _apiService.googleLogin(googleAuth.idToken!);
+            final token = res['accessToken']?.toString() ?? res['token']?.toString();
+            if (token != null && token.isNotEmpty) {
+              _apiService.token = token;
+            }
+            if (res['user'] is Map) {
+              backendUserData = Map<String, dynamic>.from(res['user'] as Map);
+            }
+          }
+        } catch (e) {
+          debugPrint('Backend sync error in fallback: $e');
+        }
+
+        if (backendUserData != null) {
+          _currentUser = UserModel.fromJson(backendUserData);
+        } else {
+          _currentUser = UserModel(
+            uid: googleAccount.id,
+            email: googleAccount.email,
+            displayName: googleAccount.displayName ?? 'Người dùng FPT',
+            photoUrl: googleAccount.photoUrl,
+            role: 'LECTURER',
+          );
+        }
       }
 
       return _currentUser!;

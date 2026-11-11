@@ -5,6 +5,7 @@ class UserModel {
     required this.displayName,
     this.photoUrl,
     this.role = 'LECTURER',
+    this.studentCode,
   });
 
   final String uid;
@@ -12,14 +13,21 @@ class UserModel {
   final String displayName;
   final String? photoUrl;
   final String role;
+  final String? studentCode;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final role = json['role']?.toString() ?? 'LECTURER';
+    final defaultName = role == 'STUDENT' ? 'Sinh viên FPT' : 'Giảng viên FPT';
     return UserModel(
       uid: json['uid']?.toString() ?? json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      displayName: json['displayName']?.toString() ?? json['name']?.toString() ?? 'Giảng viên',
-      photoUrl: json['photoUrl']?.toString(),
-      role: json['role']?.toString() ?? 'LECTURER',
+      displayName: json['displayName']?.toString() ??
+          json['fullName']?.toString() ??
+          json['name']?.toString() ??
+          defaultName,
+      photoUrl: json['photoUrl']?.toString() ?? json['avatarUrl']?.toString(),
+      role: role,
+      studentCode: json['studentCode']?.toString(),
     );
   }
 
@@ -29,6 +37,7 @@ class UserModel {
     'displayName': displayName,
     'photoUrl': photoUrl,
     'role': role,
+    'studentCode': studentCode,
   };
 }
 

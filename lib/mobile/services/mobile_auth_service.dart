@@ -93,6 +93,38 @@ class MobileAuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> syncFromUser({
+    required String? token,
+    required String email,
+    required String fullName,
+    required String role,
+    String? studentCode,
+    String? avatarUrl,
+  }) async {
+    _token = token;
+    if (token != null && token.isNotEmpty) {
+      apiService.token = token;
+    }
+    _currentUser = MobileAuthUser(
+      id: 0,
+      email: email,
+      fullName: fullName,
+      role: role,
+      studentCode: studentCode,
+      avatarUrl: avatarUrl,
+    );
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (token != null && token.isNotEmpty) {
+        await prefs.setString('auth_token', token);
+      }
+      if (_currentUser != null) {
+        await prefs.setString('auth_user', jsonEncode(_currentUser!.toJson()));
+      }
+    } catch (_) {}
+  }
+
   Future<void> updateBaseUrl(String newUrl) async {
     String cleanUrl = newUrl.trim();
     if (cleanUrl.endsWith('/')) {

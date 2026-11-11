@@ -302,11 +302,27 @@ class _DebugDevLoginPanel extends StatefulWidget {
 }
 
 class _DebugDevLoginPanelState extends State<_DebugDevLoginPanel> {
-  final _emailController = TextEditingController();
-  String _role = 'TEACHER';
+  final _emailController = TextEditingController(text: 'student1@fpt.edu.vn');
+  String _role = 'STUDENT';
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_onEmailChanged);
+  }
+
+  void _onEmailChanged() {
+    final email = _emailController.text.toLowerCase();
+    if (email.contains('student') && _role != 'STUDENT') {
+      setState(() => _role = 'STUDENT');
+    } else if ((email.contains('gv') || email.contains('teacher') || email.contains('giangvien')) && _role != 'TEACHER') {
+      setState(() => _role = 'TEACHER');
+    }
+  }
 
   @override
   void dispose() {
+    _emailController.removeListener(_onEmailChanged);
     _emailController.dispose();
     super.dispose();
   }

@@ -10,6 +10,9 @@ import 'firebase/firebase_crashlytics_service.dart';
 import 'firebase/firebase_notification_service.dart';
 import 'firebase/firebase_remote_config_service.dart';
 import 'firebase/firebase_storage_service.dart';
+import 'models/app_models.dart';
+import 'mobile/screens/mobile_main_screen.dart';
+import 'mobile/services/mobile_auth_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'services/api_service.dart';
@@ -142,13 +145,78 @@ class PRMApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final authVm = context.watch<AuthViewModel>();
 
+    Widget home;
+    if (!authVm.isAuthenticated) {
+      home = const LoginScreen();
+    } else if (authVm.currentUser?.role == 'STUDENT') {
+      home = StudentAppWrapper(
+        user: authVm.currentUser!,
+        apiService: context.read<ApiService>(),
+        onLoggedOut: () => authVm.signOut(),
+      );
+    } else {
+      home = const DashboardScreen();
+    }
+
     return MaterialApp(
       title: 'FPT University • Điểm danh',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: authVm.isAuthenticated
-          ? const DashboardScreen()
-          : const LoginScreen(),
+      home: home,
+    );
+  }
+}
+
+class StudentAppWrapper extends StatefulWidget {
+  const StudentAppWrapper({
+    super.key,
+    required this.user,
+    required this.apiService,
+    required this.onLoggedOut,
+  });
+
+  final UserModel user;
+  final ApiService apiService;
+  final VoidCallback onLoggedOut;
+
+  @override
+  State<StudentAppWrapper> createState() => _StudentAppWrapperState();
+}
+
+class _StudentAppWrapperState extends State<StudentAppWrapper> {
+  late final MobileAuthService _mobileAuthService;
+
+  @override
+  void initState() {
+    super.initState();
+    _mobileAuthService = MobileAuthService(apiService: widget.apiService);
+    _syncUser();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentAppWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user != widget.user) {
+      _syncUser();
+    }
+  }
+
+  void _syncUser() {
+    _mobileAuthService.syncFromUser(
+      token: widget.apiService.token,
+      email: widget.user.email,
+      fullName: widget.user.displayName,
+      role: widget.user.role,
+      studentCode: widget.user.studentCode,
+      avatarUrl: widget.user.photoUrl,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MobileMainScreen(
+      authService: _mobileAuthService,
+      onLoggedOut: widget.onLoggedOut,
     );
   }
 }

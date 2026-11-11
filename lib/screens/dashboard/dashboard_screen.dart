@@ -5,6 +5,7 @@ import '../../models/ui_state.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_dimens.dart';
 import '../../theme/app_typography.dart';
+import '../../viewmodels/auth_view_model.dart';
 import '../../viewmodels/dashboard_view_model.dart';
 import '../../viewmodels/live_attendance_view_model.dart';
 import '../../viewmodels/schedule_view_model.dart';
@@ -38,19 +39,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<DashboardViewModel>();
+    final authVm = context.watch<AuthViewModel>();
+    final user = authVm.currentUser;
+    final initialLetter = (user?.displayName.isNotEmpty == true) ? user!.displayName[0].toUpperCase() : 'GV';
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: CampusAppBar(
         title: 'CAMPUS / TỔNG QUAN',
-        subtitle: 'Bảng điều khiển giảng viên',
+        subtitle: user?.role == 'STUDENT' ? 'Cổng thông tin sinh viên' : 'Bảng điều khiển giảng viên',
+        avatarLetter: initialLetter,
         onAvatarTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProfileFirebaseScreen()),
           );
         },
       ),
-      drawer: _buildAppDrawer(context),
+      drawer: _buildAppDrawer(context, user),
       body: RefreshIndicator(
         onRefresh: () => vm.loadDashboard(),
         color: AppColors.accentGold,
@@ -307,7 +312,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAppDrawer(BuildContext context) {
+  Widget _buildAppDrawer(BuildContext context, UserModel? user) {
+    final initialLetter = (user?.displayName.isNotEmpty == true) ? user!.displayName[0].toUpperCase() : 'GV';
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -318,14 +324,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 26,
-                  backgroundColor: Color(0xFFD6E9A4),
-                  child: Text('N', style: TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.bold, fontSize: 20)),
+                  backgroundColor: const Color(0xFFD6E9A4),
+                  child: Text(initialLetter, style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.bold, fontSize: 20)),
                 ),
                 const SizedBox(height: 10),
-                Text('Giảng viên FPT', style: AppTypography.titleMedium.copyWith(color: Colors.white)),
-                Text('gv_campus@fpt.edu.vn', style: AppTypography.bodySmall.copyWith(color: Colors.white70)),
+                Text(user?.displayName ?? 'Giảng viên FPT', style: AppTypography.titleMedium.copyWith(color: Colors.white)),
+                Text(user?.email ?? 'gv_campus@fpt.edu.vn', style: AppTypography.bodySmall.copyWith(color: Colors.white70)),
               ],
             ),
           ),
